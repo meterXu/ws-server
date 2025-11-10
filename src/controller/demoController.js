@@ -1,6 +1,7 @@
 import Router from 'koa-router'
 const demoRouter = new Router();
 const dataMap = new Map()
+let syncData = ""
 
 demoRouter.get('/', async (ctx) => {
     ctx.body = {
@@ -16,9 +17,9 @@ demoRouter.get('/api', async (ctx) => {
     };
 });
 
-let res = []
 
 demoRouter.post('/api/receive',(ctx)=>{
+    console.log(ctx.request.body)
     if(!ctx.request.body.task_id){
         ctx.body = {
             success:false,
@@ -51,6 +52,21 @@ demoRouter.get('/api/read', (ctx) => {
             success:false,
             message:"查不到对应任务的数据"
         }
+    }
+})
+
+demoRouter.get('/api/getSync', (ctx) => {
+    ctx.body = {
+        success:true,
+        data:syncData
+    }
+})
+
+demoRouter.post('/api/setSync', (ctx) => {
+    syncData = ctx.request.body.syncData
+    ctx.body={
+        success:true,
+        data:'设置成功'
     }
 })
 
