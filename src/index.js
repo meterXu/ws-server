@@ -2,7 +2,10 @@ import Koa from 'koa';
 import cors from 'koa2-cors'
 import koaBody from 'koa-body'
 import {demoRouter} from './router/index.js'
+import http from 'http'
+import webSocket from "./middleware/webSocket.js";
 const app = new Koa()
+let server = null
 app.use(koaBody({multipart: true}));
 app.use(cors());
 app.use(async (ctx,next)=>{
@@ -13,6 +16,17 @@ app.use(async (ctx,next)=>{
     await next()
 }).use(demoRouter.routes())
 const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+try{
+  server = http.createServer(app.callback()).listen(PORT,(err)=>{
+    if(!!err){
+      console.error('HTTP server FAIL: ', err, (err && err.stack));
+    }else{
+      console.log(`service started at http://localhost:${PORT}`);
+    }
+  });
+}catch (ex) {
+  console.error('Failed to start HTTP server\n', ex, (ex && ex.stack));
+}
+
+global.webSocket = new webSocket()
+server&&global.webSocket.init(server)

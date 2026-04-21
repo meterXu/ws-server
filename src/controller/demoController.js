@@ -30,10 +30,11 @@ demoRouter.post('/api/receive', (ctx) => {
         }
         return
     }
-    if (!dataMap.has(ctx.request.body.task_id)) {
-        dataMap.set(ctx.request.body.task_id, [])
-    }
-    dataMap.get(ctx.request.body.task_id).push(ctx.request.body)
+    // if (!dataMap.has(ctx.request.body.task_id)) {
+    //     dataMap.set(ctx.request.body.task_id, [])
+    // }
+    // dataMap.get(ctx.request.body.task_id).push(ctx.request.body)
+    global.webSocket.sendToClient(ctx.request.body)
     ctx.body = {
         success: true,
         message: `task_id[${ctx.request.body.task_id}]数据接收成功`
