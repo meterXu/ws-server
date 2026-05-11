@@ -23,21 +23,11 @@ demoRouter.get('/api', async (ctx) => {
 
 demoRouter.post('/api/receive', (ctx) => {
     console.log(ctx.request.body)
-    if (!ctx.request.body.task_id) {
-        ctx.body = {
-            success: false,
-            message: "task_id不能为空"
-        }
-        return
-    }
-    // if (!dataMap.has(ctx.request.body.task_id)) {
-    //     dataMap.set(ctx.request.body.task_id, [])
-    // }
-    // dataMap.get(ctx.request.body.task_id).push(ctx.request.body)
     global.webSocket.sendToClient(ctx.request.body)
     ctx.body = {
+        code:0,
         success: true,
-        message: `task_id[${ctx.request.body.task_id}]数据接收成功`
+        message: `数据接收成功`
     }
 })
 
