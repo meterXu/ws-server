@@ -21,7 +21,7 @@ demoRouter.get('/api', async (ctx) => {
 });
 
 
-demoRouter.post('/api/receive', (ctx) => {
+demoRouter.post('/api/report', (ctx) => {
     console.log(ctx.request.body)
     global.webSocket.sendToClient(ctx.request.body)
     ctx.body = {
