@@ -8,33 +8,42 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
+      background: #f0f2f5; color: #1a1a1a; min-height: 100vh;
     }
-    .container {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      width: 100%;
-      max-width: 640px;
-      padding: 32px;
-    }
-    h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 8px; }
-    .subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
 
-    .status-bar {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px;
-      background: #f6f8fa; border-radius: 8px;
-      margin-bottom: 24px; font-size: 14px;
+    .header {
+      background: #fff; border-bottom: 1px solid #e8e8e8;
+      padding: 0 24px; height: 56px; display: flex;
+      align-items: center; justify-content: space-between;
     }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
-    .dot.connected { background: #22c55e; }
-    .dot.timer-active { animation: pulse 1s infinite; }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .nav a {
+      margin-left: 20px; text-decoration: none; font-size: 14px;
+      color: #1677ff; padding: 6px 14px; border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .nav a:hover { background: #f0f5ff; }
+    .nav a.active { background: #e6f4ff; font-weight: 500; }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .stat-card {
+      background: #fff; border-radius: 10px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; }
+    .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
+    .stat-card.green .value { color: #22c55e; }
+    .stat-card.blue .value { color: #1677ff; }
+    .stat-card.orange .value { color: #f59e0b; }
+
+    .dot-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+    .dot.active { background: #22c55e; }
+    .dot.pulse { animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
     .badge {
@@ -44,13 +53,23 @@
     .badge-running { background: #f6ffed; color: #389e0d; }
     .badge-stopped { background: #f5f5f5; color: #999; }
 
-    .section-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 10px; }
-    textarea, input {
+    .panel {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 20px; font-size: 14px; font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .panel-body { padding: 20px; }
+
+    textarea, input[type="number"] {
       width: 100%; padding: 12px; border: 1px solid #d9d9d9;
       border-radius: 8px; font-size: 14px; font-family: inherit;
       transition: border-color 0.2s;
     }
-    textarea { height: 100px; resize: vertical; }
+    textarea { height: 120px; resize: vertical; font-family: 'SF Mono', 'Fira Code', monospace; }
     textarea:focus, input:focus {
       outline: none; border-color: #1677ff;
       box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
@@ -59,6 +78,7 @@
     .form-row { display: flex; gap: 12px; align-items: flex-end; }
     .form-row > div { flex: 1; }
     .form-row label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+
     .button-row { display: flex; gap: 10px; margin-top: 16px; }
     button {
       padding: 10px 24px; border: none; border-radius: 8px;
@@ -83,63 +103,88 @@
     .result.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
     .result.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
 
-    .log-section { margin-top: 24px; }
-    .log-list {
-      max-height: 200px; overflow-y: auto;
-      background: #fafafa; border: 1px dashed #d9d9d9;
-      border-radius: 8px; padding: 12px;
-      font-size: 12px; color: #555;
+    .log-feed {
+      max-height: 240px; overflow-y: auto; padding: 8px 0;
     }
-    .log-list .empty { color: #bbb; text-align: center; padding: 20px 0; }
-    .log-item { padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
-    .log-item:last-child { border-bottom: none; }
-    .log-item .time { color: #999; margin-right: 8px; }
-    .log-item .count { color: #1677ff; }
+    .log-feed .empty { color: #bbb; text-align: center; padding: 30px 0; font-size: 13px; }
+    .log-entry {
+      padding: 8px 20px; font-size: 12px;
+      border-bottom: 1px solid #f9f9f9; display: flex; gap: 10px;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-entry .time { color: #999; white-space: nowrap; min-width: 55px; }
+    .log-entry .count { color: #1677ff; font-weight: 500; }
+    .log-entry .detail { color: #555; }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="header">
     <h1>定时循环广播</h1>
-    <p class="subtitle">按固定间隔向所有已连接的 WebSocket 客户端循环发送消息</p>
-
-    <div class="status-bar">
-      <span>客户端</span>
-      <span class="dot" id="clientDot"></span>
-      <strong id="clientCount">0</strong>
-      <span style="margin-left:12px">定时器</span>
-      <span class="dot" id="timerDot"></span>
-      <span id="timerBadge" class="badge badge-stopped">已停止</span>
+    <div class="nav">
+      <a href="/">首页</a>
+      <a href="/admin">Admin</a>
+      <a href="/timer" class="active">定时广播</a>
+      <a href="/reports">Reports</a>
     </div>
+  </div>
 
-    <div class="form-row">
-      <div>
-        <label>消息内容（JSON）</label>
-        <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{"type":"timer","message":"定时广播消息"}</textarea>
+  <div class="main">
+    <div class="grid-4">
+      <div class="stat-card green">
+        <div class="label">已连接客户端</div>
+        <div class="value" id="clientCount">0</div>
+        <div class="dot-row"><span class="dot" id="clientDot"></span><span class="sub">在线</span></div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">定时器状态</div>
+        <div class="value" id="timerState">--</div>
+        <div class="dot-row"><span class="dot" id="timerDot"></span><span class="sub" id="timerBadge">已停止</span></div>
+      </div>
+      <div class="stat-card orange">
+        <div class="label">已广播次数</div>
+        <div class="value" id="sendCount">0</div>
+        <div class="sub">本次运行</div>
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px">
-      <div style="flex:0 0 180px">
-        <label>发送间隔（秒）</label>
-        <input type="number" id="intervalInput" value="5" min="1" max="3600">
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">广播配置</div>
+        <div class="panel-body">
+          <div class="form-row">
+            <div>
+              <label>消息内容（JSON）</label>
+              <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{"type":"timer","message":"定时广播消息"}</textarea>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div style="flex:0 0 180px">
+              <label>发送间隔（秒）</label>
+              <input type="number" id="intervalInput" value="5" min="3" max="3600">
+            </div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:1px">
+              <span style="font-size:13px;color:#999">最低 3 秒，建议 ≥ 5 秒</span>
+            </div>
+          </div>
+          <div class="button-row">
+            <button class="btn-start" id="startBtn" onclick="startTimer()">启动定时广播</button>
+            <button class="btn-stop" id="stopBtn" onclick="stopTimer()" disabled>停止定时广播</button>
+            <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
+          </div>
+          <div class="result" id="result"></div>
+        </div>
       </div>
-      <div style="display:flex;align-items:flex-end;padding-bottom:1px">
-        <span style="font-size:13px;color:#999">建议 ≥ 3 秒</span>
-      </div>
-    </div>
 
-    <div class="button-row">
-      <button class="btn-start" id="startBtn" onclick="startTimer()">启动定时广播</button>
-      <button class="btn-stop" id="stopBtn" onclick="stopTimer()" disabled>停止定时广播</button>
-      <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
-    </div>
-
-    <div class="result" id="result"></div>
-
-    <div class="log-section">
-      <div class="section-title">广播日志</div>
-      <div class="log-list" id="logList">
-        <div class="empty">暂无广播记录</div>
+      <div class="panel">
+        <div class="panel-header">广播日志</div>
+        <div class="log-feed" id="logList">
+          <div class="empty">暂无广播记录</div>
+        </div>
       </div>
     </div>
   </div>
@@ -167,7 +212,7 @@
       }
 
       const interval = parseInt($('intervalInput').value, 10);
-      if (!interval || interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
+      if (!interval || interval < 3) { showResult('error', '间隔必须 >= 3 秒'); return; }
 
       try {
         const res = await fetch('/api/timer/start', {
@@ -209,6 +254,25 @@
       catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
+    function updateUI(active) {
+      $('startBtn').disabled = active;
+      $('stopBtn').disabled = !active;
+      $('intervalInput').disabled = active;
+      $('messageInput').disabled = active;
+
+      if (active) {
+        $('timerState').textContent = '运行中';
+        $('timerBadge').textContent = '运行中';
+        $('timerBadge').style.color = '#389e0d';
+        $('timerDot').className = 'dot active pulse';
+      } else {
+        $('timerState').textContent = '已停止';
+        $('timerBadge').textContent = '已停止';
+        $('timerBadge').style.color = '#999';
+        $('timerDot').className = 'dot';
+      }
+    }
+
     async function refreshStatus() {
       try {
         const [cs, ts] = await Promise.all([
@@ -217,10 +281,10 @@
         ]);
 
         $('clientCount').textContent = cs.clientCount;
-        const cDot = $('clientDot');
-        cDot.className = 'dot' + (cs.clientCount > 0 ? ' connected' : '');
+        $('clientDot').className = 'dot' + (cs.clientCount > 0 ? ' active' : '');
 
         if (ts.success && ts.status) {
+          $('sendCount').textContent = ts.status.sendCount || 0;
           updateUI(ts.status.active);
           if (ts.status.active && ts.status.sendCount !== lastSendCount) {
             lastSendCount = ts.status.sendCount;
@@ -228,25 +292,6 @@
           }
         }
       } catch {}
-    }
-
-    function updateUI(active) {
-      $('startBtn').disabled = active;
-      $('stopBtn').disabled = !active;
-      $('intervalInput').disabled = active;
-      $('messageInput').disabled = active;
-      const badge = $('timerBadge');
-      const dot = $('timerDot');
-
-      if (active) {
-        badge.textContent = '运行中';
-        badge.className = 'badge badge-running';
-        dot.className = 'dot connected timer-active';
-      } else {
-        badge.textContent = '已停止';
-        badge.className = 'badge badge-stopped';
-        dot.className = 'dot';
-      }
     }
 
     function addLogEntry(count, clientCount) {
@@ -257,8 +302,8 @@
                    now.getMinutes().toString().padStart(2,'0') + ':' +
                    now.getSeconds().toString().padStart(2,'0');
       const div = document.createElement('div');
-      div.className = 'log-item';
-      div.innerHTML = '<span class="time">' + time + '</span> 第 <span class="count">' + count + '</span> 次广播 → ' + clientCount + ' 个客户端';
+      div.className = 'log-entry';
+      div.innerHTML = '<span class="time">' + time + '</span> <span>第 <span class="count">' + count + '</span> 次广播</span> <span class="detail">→ ' + clientCount + ' 个客户端</span>';
       list.prepend(div);
       if (list.children.length > 50) list.removeChild(list.lastChild);
     }

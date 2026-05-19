@@ -8,149 +8,136 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
+      background: #f0f2f5; color: #1a1a1a; min-height: 100vh;
     }
-    .container {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      width: 100%;
-      max-width: 640px;
-      padding: 32px;
+
+    .header {
+      background: #fff; border-bottom: 1px solid #e8e8e8;
+      padding: 0 24px; height: 56px; display: flex;
+      align-items: center; justify-content: space-between;
     }
-    h1 {
-      font-size: 22px;
-      color: #1a1a1a;
-      margin-bottom: 8px;
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .nav a {
+      margin-left: 20px; text-decoration: none; font-size: 14px;
+      color: #1677ff; padding: 6px 14px; border-radius: 6px;
+      transition: background 0.2s;
     }
-    .subtitle {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 24px;
+    .nav a:hover { background: #f0f5ff; }
+    .nav a.active { background: #e6f4ff; font-weight: 500; }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .stat-card {
+      background: #fff; border-radius: 10px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: #f6f8fa;
-      border-radius: 8px;
-      margin-bottom: 24px;
-      font-size: 14px;
+    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; }
+    .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
+    .stat-card.green .value { color: #22c55e; }
+
+    .panel {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      overflow: hidden;
     }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ccc;
+    .panel-header {
+      padding: 14px 20px; font-size: 14px; font-weight: 600;
+      border-bottom: 1px solid #f0f0f0;
     }
-    .dot.connected { background: #22c55e; }
-    .section-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 10px;
-    }
+    .panel-body { padding: 20px; }
+
     textarea {
-      width: 100%;
-      height: 120px;
-      padding: 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 8px;
-      font-size: 14px;
-      font-family: inherit;
-      resize: vertical;
-      transition: border-color 0.2s;
+      width: 100%; height: 160px; padding: 12px;
+      border: 1px solid #d9d9d9; border-radius: 8px;
+      font-size: 14px; font-family: 'SF Mono', 'Fira Code', monospace;
+      resize: vertical; transition: border-color 0.2s;
     }
     textarea:focus {
-      outline: none;
-      border-color: #1677ff;
+      outline: none; border-color: #1677ff;
       box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
     }
-    .button-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
+
+    .button-row { display: flex; gap: 10px; margin-top: 16px; }
     button {
-      padding: 10px 24px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
+      padding: 10px 24px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
     }
-    .btn-primary {
-      background: #1677ff;
-      color: #fff;
-    }
+    .btn-primary { background: #1677ff; color: #fff; }
     .btn-primary:hover { background: #4096ff; }
     .btn-primary:disabled { background: #a0c4ff; cursor: not-allowed; }
     .btn-outline {
-      background: #fff;
-      color: #1677ff;
-      border: 1px solid #1677ff;
+      background: #fff; color: #1677ff; border: 1px solid #1677ff;
     }
     .btn-outline:hover { background: #f0f5ff; }
+
     .result {
-      margin-top: 16px;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: none;
+      margin-top: 16px; padding: 12px 16px; border-radius: 8px;
+      font-size: 13px; display: none;
     }
     .result.show { display: block; }
     .result.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
     .result.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
+
     .msg-preview {
-      margin-top: 24px;
-      padding: 16px;
-      background: #fafafa;
-      border-radius: 8px;
-      border: 1px dashed #d9d9d9;
+      background: #fafafa; border-radius: 8px;
+      border: 1px dashed #d9d9d9; padding: 16px; min-height: 160px;
     }
-    .msg-preview h3 {
-      font-size: 13px;
-      color: #999;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
+    .msg-preview .empty { color: #bbb; font-size: 13px; text-align: center; padding-top: 50px; }
     .msg-preview pre {
-      font-size: 13px;
-      white-space: pre-wrap;
-      word-break: break-all;
-      color: #333;
+      font-size: 13px; white-space: pre-wrap; word-break: break-all; color: #333;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>WebSocket 消息发送</h1>
-    <p class="subtitle">向所有已连接的 WebSocket 客户端广播消息</p>
+  <div class="header">
+    <h1>WebSocket 管理</h1>
+    <div class="nav">
+      <a href="/">首页</a>
+      <a href="/admin" class="active">Admin</a>
+      <a href="/timer">定时广播</a>
+      <a href="/reports">Reports</a>
+    </div>
+  </div>
 
-    <div class="status-bar">
-      <span class="dot" id="statusDot"></span>
-      <span>已连接客户端：<strong id="clientCount">0</strong></span>
+  <div class="main">
+    <div class="grid-4">
+      <div class="stat-card green">
+        <div class="label">已连接客户端</div>
+        <div class="value" id="clientCount">0</div>
+        <div class="sub">实时更新</div>
+      </div>
     </div>
 
-    <div class="section-title">消息内容（JSON）</div>
-    <textarea id="messageInput" placeholder='输入要发送的消息，例如：{"type": "notice", "content": "hello"}'>{"type": "broadcast", "message": "这是一条测试消息"}</textarea>
-    <div class="button-row">
-      <button class="btn-primary" id="sendBtn" onclick="sendMessage()">发送到所有客户端</button>
-      <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
-    </div>
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header">消息编辑</div>
+        <div class="panel-body">
+          <textarea id="messageInput" placeholder='输入 JSON 消息，例如：{"type": "notice", "content": "hello"}'>{"type": "broadcast", "message": "这是一条测试消息"}</textarea>
+          <div class="button-row">
+            <button class="btn-primary" id="sendBtn" onclick="sendMessage()">发送到所有客户端</button>
+            <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
+          </div>
+          <div class="result" id="result"></div>
+        </div>
+      </div>
 
-    <div class="result" id="result"></div>
-
-    <div class="msg-preview">
-      <h3>上次广播的消息</h3>
-      <pre id="lastMessage">暂无</pre>
+      <div class="panel">
+        <div class="panel-header">上次广播的消息</div>
+        <div class="panel-body">
+          <div class="msg-preview">
+            <pre id="lastMessage" class="empty">暂无</pre>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -169,17 +156,11 @@
     async function sendMessage() {
       const btn = $('sendBtn');
       const raw = $('messageInput').value.trim();
-      if (!raw) {
-        showResult('error', '消息内容不能为空');
-        return;
-      }
+      if (!raw) { showResult('error', '消息内容不能为空'); return; }
 
       let payload;
-      try {
-        payload = JSON.parse(raw);
-      } catch {
-        showResult('error', 'JSON 格式无效，请检查后重试');
-        return;
+      try { payload = JSON.parse(raw); } catch {
+        showResult('error', 'JSON 格式无效，请检查后重试'); return;
       }
 
       btn.disabled = true;
@@ -194,8 +175,10 @@
         const data = await res.json();
         if (data.success) {
           lastBroadcast = payload;
-          $('lastMessage').textContent = JSON.stringify(payload, null, 2);
-          showResult('success', `发送成功！已向 ${data.clientCount} 个客户端广播`);
+          const pre = $('lastMessage');
+          pre.textContent = JSON.stringify(payload, null, 2);
+          pre.className = '';
+          showResult('success', '发送成功！已向 ' + data.clientCount + ' 个客户端广播');
         } else {
           showResult('error', '发送失败: ' + data.message);
         }
@@ -210,11 +193,8 @@
 
     function formatJson() {
       const raw = $('messageInput').value.trim();
-      try {
-        $('messageInput').value = JSON.stringify(JSON.parse(raw), null, 2);
-      } catch {
-        showResult('error', 'JSON 格式无效，无法格式化');
-      }
+      try { $('messageInput').value = JSON.stringify(JSON.parse(raw), null, 2); }
+      catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
     async function refreshClients() {
@@ -222,8 +202,6 @@
         const res = await fetch('/api/clients');
         const data = await res.json();
         $('clientCount').textContent = data.clientCount;
-        const dot = $('statusDot');
-        dot.className = 'dot' + (data.clientCount > 0 ? ' connected' : '');
       } catch {}
     }
 
