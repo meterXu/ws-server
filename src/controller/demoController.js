@@ -1,10 +1,15 @@
 import Router from 'koa-router'
+import { fileURLToPath } from 'node:url'
+import { dirname } from 'node:path'
 
 const demoRouter = new Router();
 const dataMap = new Map()
 let syncData = ""
 import path from "node:path"
 import fs from "node:fs"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 demoRouter.get('/', async (ctx) => {
     ctx.body = {
@@ -116,6 +121,85 @@ demoRouter.post('/api/upload', (ctx) => {
             message: err.message
         }
     }
+})
+
+demoRouter.get('/admin', async (ctx) => {
+    const htmlPath = path.join(__dirname, '..', 'views', 'admin.html')
+    ctx.type = 'text/html; charset=utf-8'
+    ctx.body = fs.readFileSync(htmlPath, 'utf-8')
+})
+
+demoRouter.get('/api/clients', async (ctx) => {
+    ctx.body = {
+        success: true,
+        clientCount: global.webSocket ? global.webSocket.getClientCount() : 0
+    }
+})
+
+demoRouter.post('/api/broadcast', async (ctx) => {
+    const count = global.webSocket ? global.webSocket.getClientCount() : 0
+    if (count === 0) {
+        ctx.body = { success: true, clientCount: 0, message: '当前没有已连接的客户端' }
+        return
+    }
+    global.webSocket.sendToClient(ctx.request.body)
+    console.log('[Broadcast] 消息已广播至 ' + count + ' 个客户端:', ctx.request.body)
+    ctx.body = { success: true, clientCount: count, message: '广播成功' }
+})
+
+// ---- 定时广播 ----
+
+demoRouter.post('/api/timer/start', async (ctx) => {
+    const { message, interval } = ctx.request.body
+    if (!message) {
+        ctx.body = { success: false, message: 'message 不能为空' }
+        return
+    }
+    if (!interval || interval < 1) {
+        ctx.body = { success: false, message: 'interval 必须 >= 1 秒' }
+        return
+    }
+    if (!global.webSocket) {
+        ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
+        return
+    }
+    const ok = global.webSocket.startTimer(message, interval * 1000)
+    if (!ok) {
+        ctx.body = { success: false, message: '已有定时任务在运行，请先停止' }
+        return
+    }
+    console.log('[Timer] 定时广播已启动，间隔 ' + interval + 's，消息:', message)
+    ctx.body = { success: true, message: '定时广播已启动', status: global.webSocket.getTimerStatus() }
+})
+
+demoRouter.post('/api/timer/stop', async (ctx) => {
+    if (!global.webSocket) {
+        ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
+        return
+    }
+    const ok = global.webSocket.stopTimer()
+    if (!ok) {
+        ctx.body = { success: false, message: '当前没有定时任务在运行' }
+        return
+    }
+    console.log('[Timer] 定时广播已停止')
+    ctx.body = { success: true, message: '定时广播已停止', status: global.webSocket.getTimerStatus() }
+})
+
+demoRouter.get('/api/timer/status', async (ctx) => {
+    if (!global.webSocket) {
+        ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
+        return
+    }
+    ctx.body = { success: true, status: global.webSocket.getTimerStatus() }
+})
+
+// ---- 页面 ----
+
+demoRouter.get('/timer', async (ctx) => {
+    const htmlPath = path.join(__dirname, '..', 'views', 'timer.html')
+    ctx.type = 'text/html; charset=utf-8'
+    ctx.body = fs.readFileSync(htmlPath, 'utf-8')
 })
 
 export {demoRouter}

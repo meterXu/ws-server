@@ -34,12 +34,53 @@ export default class WS {
     })
   }
 
+  getClientCount () {
+    let count = 0
+    for (const client of this.clients) {
+      if (client.readyState === WebSocket.OPEN) count++
+    }
+    return count
+  }
+
   sendToClient (data) {
     const message = JSON.stringify(data)
     for (const client of this.clients) {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message)
       }
+    }
+  }
+
+  startTimer (message, intervalMs) {
+    if (this._timerId) return false
+    this._timerMessage = message
+    this._timerIntervalMs = intervalMs
+    this._timerStartAt = Date.now()
+    this._timerSendCount = 0
+    this._timerId = setInterval(() => {
+      const count = this.getClientCount()
+      if (count > 0) {
+        this.sendToClient(message)
+        this._timerSendCount++
+      }
+    }, intervalMs)
+    return true
+  }
+
+  stopTimer () {
+    if (!this._timerId) return false
+    clearInterval(this._timerId)
+    this._timerId = null
+    return true
+  }
+
+  getTimerStatus () {
+    return {
+      active: !!this._timerId,
+      message: this._timerMessage || null,
+      intervalMs: this._timerIntervalMs || null,
+      startAt: this._timerStartAt || null,
+      sendCount: this._timerSendCount || 0
     }
   }
 }

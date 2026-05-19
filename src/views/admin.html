@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket 管理页面</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 640px;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 22px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #f6f8fa;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+    .dot.connected { background: #22c55e; }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #1677ff;
+      box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+    }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    button {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #1677ff;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #4096ff; }
+    .btn-primary:disabled { background: #a0c4ff; cursor: not-allowed; }
+    .btn-outline {
+      background: #fff;
+      color: #1677ff;
+      border: 1px solid #1677ff;
+    }
+    .btn-outline:hover { background: #f0f5ff; }
+    .result {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+    .result.show { display: block; }
+    .result.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+    .result.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
+    .msg-preview {
+      margin-top: 24px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 8px;
+      border: 1px dashed #d9d9d9;
+    }
+    .msg-preview h3 {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .msg-preview pre {
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WebSocket 消息发送</h1>
+    <p class="subtitle">向所有已连接的 WebSocket 客户端广播消息</p>
+
+    <div class="status-bar">
+      <span class="dot" id="statusDot"></span>
+      <span>已连接客户端：<strong id="clientCount">0</strong></span>
+    </div>
+
+    <div class="section-title">消息内容（JSON）</div>
+    <textarea id="messageInput" placeholder='输入要发送的消息，例如：{"type": "notice", "content": "hello"}'>{"type": "broadcast", "message": "这是一条测试消息"}</textarea>
+    <div class="button-row">
+      <button class="btn-primary" id="sendBtn" onclick="sendMessage()">发送到所有客户端</button>
+      <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <div class="msg-preview">
+      <h3>上次广播的消息</h3>
+      <pre id="lastMessage">暂无</pre>
+    </div>
+  </div>
+
+  <script>
+    let lastBroadcast = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function showResult(type, msg) {
+      const el = $('result');
+      el.className = 'result show ' + type;
+      el.textContent = msg;
+      setTimeout(() => { el.className = 'result'; }, 5000);
+    }
+
+    async function sendMessage() {
+      const btn = $('sendBtn');
+      const raw = $('messageInput').value.trim();
+      if (!raw) {
+        showResult('error', '消息内容不能为空');
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        showResult('error', 'JSON 格式无效，请检查后重试');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '发送中...';
+
+      try {
+        const res = await fetch('/api/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          lastBroadcast = payload;
+          $('lastMessage').textContent = JSON.stringify(payload, null, 2);
+          showResult('success', `发送成功！已向 ${data.clientCount} 个客户端广播`);
+        } else {
+          showResult('error', '发送失败: ' + data.message);
+        }
+      } catch (err) {
+        showResult('error', '请求失败: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '发送到所有客户端';
+        refreshClients();
+      }
+    }
+
+    function formatJson() {
+      const raw = $('messageInput').value.trim();
+      try {
+        $('messageInput').value = JSON.stringify(JSON.parse(raw), null, 2);
+      } catch {
+        showResult('error', 'JSON 格式无效，无法格式化');
+      }
+    }
+
+    async function refreshClients() {
+      try {
+        const res = await fetch('/api/clients');
+        const data = await res.json();
+        $('clientCount').textContent = data.clientCount;
+        const dot = $('statusDot');
+        dot.className = 'dot' + (data.clientCount > 0 ? ' connected' : '');
+      } catch {}
+    }
+
+    refreshClients();
+    setInterval(refreshClients, 5000);
+  </script>
+</body>
+</html>
