@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report 消息记录</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5; color: #1a1a1a; min-height: 100vh;
+    }
+
+    .header {
+      background: #fff; border-bottom: 1px solid #e8e8e8;
+      padding: 0 24px; height: 56px; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .nav a {
+      margin-left: 20px; text-decoration: none; font-size: 14px;
+      color: #1677ff; padding: 6px 14px; border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .nav a:hover { background: #f0f5ff; }
+    .nav a.active { background: #e6f4ff; font-weight: 500; }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+
+    .stat-card {
+      background: #fff; border-radius: 10px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; }
+    .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
+    .stat-card.green .value { color: #22c55e; }
+    .stat-card.blue .value { color: #1677ff; }
+    .stat-card.orange .value { color: #f59e0b; }
+
+    .panel {
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 14px 20px; font-size: 14px; font-weight: 600;
+      border-bottom: 1px solid #f0f0f0; display: flex;
+      align-items: center; justify-content: space-between;
+    }
+    .panel-header .badge {
+      font-size: 12px; font-weight: 400; color: #999;
+      background: #fafafa; padding: 2px 10px; border-radius: 10px;
+    }
+
+    .table-wrap { max-height: 500px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left; padding: 10px 20px; background: #fafafa;
+      color: #666; font-weight: 500; font-size: 12px;
+      position: sticky; top: 0; z-index: 1;
+    }
+    td { padding: 10px 20px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
+    td.time { white-space: nowrap; color: #999; font-size: 12px; min-width: 90px; }
+    td.ip { white-space: nowrap; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #1677ff; min-width: 120px; }
+    td.body {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+      color: #333; word-break: break-all; max-width: 0; width: 100%;
+    }
+    td.body .json-preview {
+      max-height: 60px; overflow: hidden; position: relative;
+      white-space: pre-wrap;
+    }
+    td.body .json-expanded { white-space: pre-wrap; }
+
+    .expand-btn, .copy-btn {
+      font-size: 11px; cursor: pointer; background: none;
+      border: none; padding: 2px 8px; margin-top: 4px; border-radius: 3px;
+    }
+    .expand-btn { color: #1677ff; }
+    .expand-btn:hover { text-decoration: underline; }
+    .copy-btn {
+      color: #999; border: 1px solid #d9d9d9; margin-left: 4px;
+    }
+    .copy-btn:hover { color: #1677ff; border-color: #1677ff; }
+
+    .empty {
+      text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px;
+    }
+    .empty .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+    @media (max-width: 768px) {
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Report 消息记录</h1>
+    <div class="nav">
+      <a href="/">首页</a>
+      <a href="/admin">Admin</a>
+      <a href="/timer">定时广播</a>
+      <a href="/reports" class="active">Reports</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="grid-3">
+      <div class="stat-card green">
+        <div class="label">累计收到</div>
+        <div class="value" id="totalCount">0</div>
+        <div class="sub">/api/report 请求</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">今日收到</div>
+        <div class="value" id="todayCount">0</div>
+        <div class="sub" id="todayDate">--</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="label">最新一条</div>
+        <div class="value" id="lastTime" style="font-size:18px">--</div>
+        <div class="sub" id="lastIp">--</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        Report 消息列表
+        <span class="badge" id="listBadge">0 条</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:100px">时间</th>
+              <th style="width:130px">来源 IP</th>
+              <th>消息内容</th>
+            </tr>
+          </thead>
+          <tbody id="reportTbody">
+            <tr><td colspan="3"><div class="empty"><div class="icon">-</div>暂无数据，等待 /api/report 请求</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function $(id) { return document.getElementById(id); }
+
+    function timePart(iso) {
+      const d = new Date(iso);
+      return d.getHours().toString().padStart(2,'0') + ':' +
+             d.getMinutes().toString().padStart(2,'0') + ':' +
+             d.getSeconds().toString().padStart(2,'0');
+    }
+
+    function datePart(iso) {
+      const d = new Date(iso);
+      return (d.getMonth()+1) + '/' + d.getDate();
+    }
+
+    function toggleExpand(btn) {
+      const cell = btn.parentElement;
+      const preview = cell.querySelector('.json-preview');
+      const expanded = cell.querySelector('.json-expanded');
+      if (expanded.style.display === 'none') {
+        preview.style.display = 'none';
+        expanded.style.display = 'block';
+        btn.textContent = '收起';
+      } else {
+        preview.style.display = 'block';
+        expanded.style.display = 'none';
+        btn.textContent = '展开';
+      }
+    }
+
+    async function copyBody(btn) {
+      const cell = btn.parentElement;
+      const raw = JSON.parse(cell.getAttribute('data-raw'));
+      try {
+        await navigator.clipboard.writeText(raw);
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 1500);
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = raw;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制'; }, 1500);
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    async function refreshAll() {
+      try {
+        const res = await fetch('/api/reports?limit=100');
+        const data = await res.json();
+        if (!data.success) return;
+
+        const reports = data.reports || [];
+        $('totalCount').textContent = data.total || 0;
+        $('listBadge').textContent = (data.total || 0) + ' 条';
+
+        // today count
+        const today = new Date().toISOString().slice(0, 10);
+        let todayCount = 0;
+        for (const r of reports) {
+          if (r.time && r.time.slice(0, 10) === today) todayCount++;
+        }
+        $('todayCount').textContent = todayCount;
+        $('todayDate').textContent = today;
+
+        // last
+        if (reports.length > 0) {
+          $('lastTime').textContent = timePart(reports[0].time);
+          $('lastIp').textContent = '来自 ' + (reports[0].ip || 'unknown');
+        }
+
+        // table
+        const tbody = $('reportTbody');
+        if (reports.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="icon">-</div>暂无数据，等待 /api/report 请求</div></td></tr>';
+        } else {
+          tbody.innerHTML = reports.map(r => {
+            const bodyStr = typeof r.body === 'string' ? r.body : JSON.stringify(r.body, null, 2);
+            const truncated = bodyStr.length > 120;
+            return '<tr>' +
+              '<td class="time">' + timePart(r.time) + '<br><span style="font-size:10px;color:#bbb">' + datePart(r.time) + '</span></td>' +
+              '<td class="ip">' + (r.ip || 'unknown') + '</td>' +
+              '<td class="body" data-raw=\'' + JSON.stringify(bodyStr) + '\'>' +
+                (truncated
+                  ? '<div class="json-preview">' + escapeHtml(bodyStr.slice(0, 120)) + '...</div>' +
+                    '<div class="json-expanded" style="display:none">' + escapeHtml(bodyStr) + '</div>' +
+                    '<button class="expand-btn" onclick="toggleExpand(this)">展开</button>'
+                  : '<div class="json-expanded">' + escapeHtml(bodyStr) + '</div>') +
+                ' <button class="copy-btn" onclick="copyBody(this)">复制</button>' +
+              '</td>' +
+              '</tr>';
+          }).join('');
+        }
+      } catch {}
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 3000);
+  </script>
+</body>
+</html>
