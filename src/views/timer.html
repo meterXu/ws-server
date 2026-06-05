@@ -27,7 +27,6 @@
 
     .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
     .stat-card {
       background: #fff; border-radius: 10px; padding: 20px;
@@ -46,22 +45,18 @@
     .dot.pulse { animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .badge {
-      display: inline-block; padding: 2px 10px; border-radius: 12px;
-      font-size: 12px; font-weight: 500;
-    }
-    .badge-running { background: #f6ffed; color: #389e0d; }
-    .badge-stopped { background: #f5f5f5; color: #999; }
-
     .panel {
       background: #fff; border-radius: 10px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
       overflow: hidden;
+      margin-bottom: 16px;
     }
     .panel-header {
       padding: 14px 20px; font-size: 14px; font-weight: 600;
       border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center; justify-content: space-between;
     }
+    .panel-header .hint { font-size: 12px; color: #999; font-weight: 400; }
     .panel-body { padding: 20px; }
 
     textarea, input[type="number"] {
@@ -69,7 +64,7 @@
       border-radius: 8px; font-size: 14px; font-family: inherit;
       transition: border-color 0.2s;
     }
-    textarea { height: 120px; resize: vertical; font-family: 'SF Mono', 'Fira Code', monospace; }
+    textarea { height: 100px; resize: vertical; font-family: 'SF Mono', 'Fira Code', monospace; }
     textarea:focus, input:focus {
       outline: none; border-color: #1677ff;
       box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
@@ -89,7 +84,6 @@
     .btn-start:disabled { background: #bbf7d0; cursor: not-allowed; }
     .btn-stop { background: #ef4444; color: #fff; }
     .btn-stop:hover { background: #dc2626; }
-    .btn-stop:disabled { background: #fecaca; cursor: not-allowed; }
     .btn-outline {
       background: #fff; color: #1677ff; border: 1px solid #1677ff;
     }
@@ -103,21 +97,78 @@
     .result.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
     .result.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
 
+    /* Timer cards */
+    .timer-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .timer-grid .empty {
+      grid-column: 1 / -1; text-align: center; color: #bbb;
+      padding: 40px 0; font-size: 14px;
+    }
+
+    .timer-card {
+      border: 1px solid #f0f0f0; border-radius: 10px;
+      padding: 16px; background: #fafafa;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .timer-card:hover { border-color: #d9d9d9; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .timer-card.active { border-left: 3px solid #22c55e; background: #f9fefb; }
+    .timer-card.stopped { border-left: 3px solid #d9d9d9; }
+
+    .timer-card .tc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .timer-card .tc-id { font-weight: 600; font-size: 14px; }
+    .timer-card .tc-msg {
+      font-size: 12px; font-family: 'SF Mono', 'Fira Code', monospace;
+      background: #f5f5f5; padding: 8px 10px; border-radius: 6px;
+      word-break: break-all; max-height: 40px; overflow: hidden;
+      color: #555; margin-bottom: 10px; white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .timer-card .tc-meta {
+      display: flex; gap: 16px; font-size: 12px; color: #888; margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .timer-card .tc-meta span { white-space: nowrap; }
+    .timer-card .tc-actions { display: flex; gap: 8px; }
+
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 12px;
+      font-size: 12px; font-weight: 500; flex-shrink: 0;
+    }
+    .badge-running { background: #f6ffed; color: #389e0d; }
+    .badge-stopped { background: #f5f5f5; color: #999; }
+
+    .btn-sm {
+      padding: 5px 14px; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-sm-start { background: #22c55e; color: #fff; }
+    .btn-sm-start:hover { background: #16a34a; }
+    .btn-sm-stop { background: #ef4444; color: #fff; }
+    .btn-sm-stop:hover { background: #dc2626; }
+    .btn-sm-del { background: #fff; color: #999; border: 1px solid #d9d9d9; }
+    .btn-sm-del:hover { background: #fff2f0; color: #ef4444; border-color: #ffccc7; }
+
+    /* Log */
     .log-feed {
-      max-height: 240px; overflow-y: auto; padding: 8px 0;
+      max-height: 300px; overflow-y: auto; padding: 8px 0;
     }
     .log-feed .empty { color: #bbb; text-align: center; padding: 30px 0; font-size: 13px; }
     .log-entry {
       padding: 8px 20px; font-size: 12px;
-      border-bottom: 1px solid #f9f9f9; display: flex; gap: 10px;
+      border-bottom: 1px solid #f9f9f9; display: flex; gap: 10px; align-items: center;
     }
     .log-entry:last-child { border-bottom: none; }
     .log-entry .time { color: #999; white-space: nowrap; min-width: 55px; }
+    .log-entry .tid { color: #1677ff; font-weight: 500; min-width: 36px; }
     .log-entry .count { color: #1677ff; font-weight: 500; }
     .log-entry .detail { color: #555; }
 
     @media (max-width: 768px) {
-      .grid-2 { grid-template-columns: 1fr; }
+      .timer-grid { grid-template-columns: 1fr; }
       .grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
@@ -141,59 +192,76 @@
         <div class="dot-row"><span class="dot" id="clientDot"></span><span class="sub">在线</span></div>
       </div>
       <div class="stat-card blue">
-        <div class="label">定时器状态</div>
-        <div class="value" id="timerState">--</div>
-        <div class="dot-row"><span class="dot" id="timerDot"></span><span class="sub" id="timerBadge">已停止</span></div>
+        <div class="label">活跃定时器</div>
+        <div class="value" id="activeCount">0</div>
+        <div class="sub" id="totalTimerCount">共 0 个定时器</div>
       </div>
       <div class="stat-card orange">
-        <div class="label">已广播次数</div>
-        <div class="value" id="sendCount">0</div>
-        <div class="sub">本次运行</div>
+        <div class="label">累计广播次数</div>
+        <div class="value" id="totalSends">0</div>
+        <div class="sub">所有定时器合计</div>
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="panel">
-        <div class="panel-header">广播配置</div>
-        <div class="panel-body">
-          <div class="form-row">
-            <div>
-              <label>消息内容（JSON）</label>
-              <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{"type":"timer","message":"定时广播消息"}</textarea>
-            </div>
+    <!-- Add timer form -->
+    <div class="panel">
+      <div class="panel-header">
+        添加定时广播
+        <span class="hint">可同时运行多个定时器</span>
+      </div>
+      <div class="panel-body">
+        <div class="form-row">
+          <div>
+            <label>消息内容（JSON）</label>
+            <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{"type":"timer","message":"定时广播消息"}</textarea>
           </div>
-          <div class="form-row" style="margin-top:12px">
-            <div style="flex:0 0 180px">
-              <label>发送间隔（秒）</label>
-              <input type="number" id="intervalInput" value="5" min="3" max="3600">
-            </div>
-            <div style="display:flex;align-items:flex-end;padding-bottom:1px">
-              <span style="font-size:13px;color:#999">最低 3 秒，建议 ≥ 5 秒</span>
-            </div>
+        </div>
+        <div class="form-row" style="margin-top:12px">
+          <div style="flex:0 0 180px">
+            <label>发送间隔（秒）</label>
+            <input type="number" id="intervalInput" value="5" min="3" max="3600">
           </div>
-          <div class="button-row">
-            <button class="btn-start" id="startBtn" onclick="startTimer()">启动定时广播</button>
-            <button class="btn-stop" id="stopBtn" onclick="stopTimer()" disabled>停止定时广播</button>
-            <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
+          <div style="display:flex;align-items:flex-end;padding-bottom:1px">
+            <span style="font-size:13px;color:#999">最低 3 秒，建议 ≥ 5 秒</span>
           </div>
-          <div class="result" id="result"></div>
+        </div>
+        <div class="button-row">
+          <button class="btn-start" id="startBtn" onclick="addTimer()">添加并启动</button>
+          <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
+        </div>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+
+    <!-- Timer list -->
+    <div class="panel">
+      <div class="panel-header">定时器列表</div>
+      <div class="panel-body">
+        <div class="timer-grid" id="timerList">
+          <div class="empty">暂无定时广播任务，请添加一个</div>
         </div>
       </div>
+    </div>
 
-      <div class="panel">
-        <div class="panel-header">广播日志</div>
-        <div class="log-feed" id="logList">
-          <div class="empty">暂无广播记录</div>
-        </div>
+    <!-- Broadcast log -->
+    <div class="panel">
+      <div class="panel-header">广播日志</div>
+      <div class="log-feed" id="logList">
+        <div class="empty">暂无广播记录</div>
       </div>
     </div>
   </div>
 
   <script>
     let pollTimer = null;
-    let lastSendCount = 0;
+    let prevTimers = [];
+    let pendingOps = new Set(); // 防止重复操作
 
     function $(id) { return document.getElementById(id); }
+
+    function busy(id) { return pendingOps.has(id); }
+    function lock(id) { pendingOps.add(id); }
+    function unlock(id) { pendingOps.delete(id); }
 
     function showResult(type, msg) {
       const el = $('result');
@@ -202,7 +270,14 @@
       setTimeout(() => { el.className = 'result'; }, 5000);
     }
 
-    async function startTimer() {
+    function elapsed(ts) {
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return s + 's';
+      if (s < 3600) return Math.floor(s / 60) + 'm' + (s % 60) + 's';
+      return Math.floor(s / 3600) + 'h' + Math.floor((s % 3600) / 60) + 'm';
+    }
+
+    async function addTimer() {
       const raw = $('messageInput').value.trim();
       if (!raw) { showResult('error', '消息内容不能为空'); return; }
 
@@ -222,9 +297,8 @@
         });
         const data = await res.json();
         if (data.success) {
-          showResult('success', '定时广播已启动！间隔 ' + interval + ' 秒');
-          lastSendCount = 0;
-          updateUI(true);
+          showResult('success', '定时器 #' + data.timer.id + ' 已启动，间隔 ' + interval + ' 秒');
+          await refreshStatus();
         } else {
           showResult('error', data.message);
         }
@@ -233,13 +307,73 @@
       }
     }
 
-    async function stopTimer() {
+    async function stopTimer(id) {
+      const key = 'stop:' + id;
+      if (busy(key)) return;
+      lock(key);
       try {
-        const res = await fetch('/api/timer/stop', { method: 'POST' });
+        const res = await fetch('/api/timer/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
         const data = await res.json();
         if (data.success) {
-          showResult('success', '定时广播已停止，共发送 ' + (data.status.sendCount || 0) + ' 次');
-          updateUI(false);
+          showResult('success', '定时器 #' + id + ' 已停止');
+          await refreshStatus();
+        } else {
+          showResult('error', data.message);
+        }
+      } catch (err) {
+        showResult('error', '请求失败: ' + err.message);
+      } finally {
+        unlock(key);
+      }
+    }
+
+    async function restartTimer(id) {
+      const key = 'restart:' + id;
+      if (busy(key)) return;
+      const timer = prevTimers.find(t => t.id === id);
+      if (!timer) return;
+      lock(key);
+      try {
+        const [startRes] = await Promise.all([
+          fetch('/api/timer/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: timer.message, interval: Math.round(timer.intervalMs / 1000) })
+          }).then(r => r.json()),
+          fetch('/api/timer/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+          }).then(r => r.json())
+        ]);
+        if (startRes.success) {
+          showResult('success', '定时器已重启为新 #' + startRes.timer.id);
+          await refreshStatus();
+        } else {
+          showResult('error', startRes.message);
+        }
+      } catch (err) {
+        showResult('error', '请求失败: ' + err.message);
+      } finally {
+        unlock(key);
+      }
+    }
+
+    async function removeTimer(id) {
+      try {
+        const res = await fetch('/api/timer/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showResult('success', '定时器 #' + id + ' 已删除');
+          await refreshStatus();
         } else {
           showResult('error', data.message);
         }
@@ -254,23 +388,62 @@
       catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
-    function updateUI(active) {
-      $('startBtn').disabled = active;
-      $('stopBtn').disabled = !active;
-      $('intervalInput').disabled = active;
-      $('messageInput').disabled = active;
+    function renderTimerList(timers) {
+      const container = $('timerList');
 
-      if (active) {
-        $('timerState').textContent = '运行中';
-        $('timerBadge').textContent = '运行中';
-        $('timerBadge').style.color = '#389e0d';
-        $('timerDot').className = 'dot active pulse';
-      } else {
-        $('timerState').textContent = '已停止';
-        $('timerBadge').textContent = '已停止';
-        $('timerBadge').style.color = '#999';
-        $('timerDot').className = 'dot';
+      $('activeCount').textContent = timers.filter(t => t.active).length;
+      $('totalTimerCount').textContent = '共 ' + timers.length + ' 个定时器';
+      $('totalSends').textContent = timers.reduce((s, t) => s + t.sendCount, 0);
+
+      if (timers.length === 0) {
+        container.innerHTML = '<div class="empty">暂无定时广播任务，请添加一个</div>';
+        return;
       }
+
+      container.innerHTML = timers.map(t => {
+        const active = t.active;
+        return `
+          <div class="timer-card ${active ? 'active' : 'stopped'}">
+            <div class="tc-header">
+              <span class="tc-id">定时器 #${t.id}</span>
+              <span class="badge ${active ? 'badge-running' : 'badge-stopped'}">${active ? '运行中' : '已停止'}</span>
+            </div>
+            <div class="tc-msg" title="${escAttr(JSON.stringify(t.message))}">${escHtml(JSON.stringify(t.message))}</div>
+            <div class="tc-meta">
+              <span>间隔: ${t.intervalMs / 1000}s</span>
+              <span>已发送: ${t.sendCount} 次</span>
+              ${active ? '<span>已运行: ' + elapsed(t.startAt) + '</span>' : ''}
+            </div>
+            <div class="tc-actions">
+              ${active
+                ? '<button class="btn-sm btn-sm-stop" onclick="stopTimer(' + t.id + ')">停止</button>'
+                : '<button class="btn-sm btn-sm-start" onclick="restartTimer(' + t.id + ')">重启</button>'}
+              <button class="btn-sm btn-sm-del" onclick="removeTimer(' + t.id + ')">删除</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function escAttr(s) {
+      return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function addLogEntry(timerId, count, clientCount) {
+      const list = $('logList');
+      if (list.querySelector('.empty')) list.innerHTML = '';
+      const now = new Date();
+      const time = now.getHours().toString().padStart(2,'0') + ':' +
+                   now.getMinutes().toString().padStart(2,'0') + ':' +
+                   now.getSeconds().toString().padStart(2,'0');
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      div.innerHTML = '<span class="time">' + time + '</span> <span class="tid">#' + timerId + '</span> <span>第 <span class="count">' + count + '</span> 次广播</span> <span class="detail">→ ' + clientCount + ' 个客户端</span>';
+      list.prepend(div);
+      if (list.children.length > 80) list.removeChild(list.lastChild);
     }
 
     async function refreshStatus() {
@@ -283,29 +456,18 @@
         $('clientCount').textContent = cs.clientCount;
         $('clientDot').className = 'dot' + (cs.clientCount > 0 ? ' active' : '');
 
-        if (ts.success && ts.status) {
-          $('sendCount').textContent = ts.status.sendCount || 0;
-          updateUI(ts.status.active);
-          if (ts.status.active && ts.status.sendCount !== lastSendCount) {
-            lastSendCount = ts.status.sendCount;
-            addLogEntry(ts.status.sendCount, cs.clientCount);
+        if (ts.success && ts.timers) {
+          // Detect new broadcasts
+          for (const t of ts.timers) {
+            const prev = prevTimers.find(p => p.id === t.id);
+            if (prev && t.sendCount > prev.sendCount && t.active) {
+              addLogEntry(t.id, t.sendCount, cs.clientCount);
+            }
           }
+          renderTimerList(ts.timers);
+          prevTimers = ts.timers;
         }
       } catch {}
-    }
-
-    function addLogEntry(count, clientCount) {
-      const list = $('logList');
-      if (list.querySelector('.empty')) list.innerHTML = '';
-      const now = new Date();
-      const time = now.getHours().toString().padStart(2,'0') + ':' +
-                   now.getMinutes().toString().padStart(2,'0') + ':' +
-                   now.getSeconds().toString().padStart(2,'0');
-      const div = document.createElement('div');
-      div.className = 'log-entry';
-      div.innerHTML = '<span class="time">' + time + '</span> <span>第 <span class="count">' + count + '</span> 次广播</span> <span class="detail">→ ' + clientCount + ' 个客户端</span>';
-      list.prepend(div);
-      if (list.children.length > 50) list.removeChild(list.lastChild);
     }
 
     refreshStatus();

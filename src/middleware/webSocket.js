@@ -13,6 +13,8 @@ export default class WS {
     this._totalBytesSent = 0
     this._totalSendCount = 0
     this._messageLogs = []
+    this.timers = new Map()
+    this._nextTimerId = 0
   }
 
   init (server) {
@@ -125,35 +127,47 @@ export default class WS {
   // ---- 定时广播 ----
 
   startTimer (message, intervalMs) {
-    if (this._timerId) return false
-    this._timerMessage = message
-    this._timerIntervalMs = intervalMs
-    this._timerStartAt = Date.now()
-    this._timerSendCount = 0
-    this._timerId = setInterval(() => {
+    const id = ++this._nextTimerId
+    const entry = { id, message, intervalMs, startAt: Date.now(), sendCount: 0, handle: null }
+    entry.handle = setInterval(() => {
       const count = this.getClientCount()
       if (count > 0) {
         this.sendToClient(message)
-        this._timerSendCount++
+        entry.sendCount++
       }
     }, intervalMs)
+    this.timers.set(id, entry)
+    return { id, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
+  }
+
+  stopTimer (id) {
+    const entry = this.timers.get(id)
+    if (!entry || !entry.handle) return false
+    clearInterval(entry.handle)
+    entry.handle = null
     return true
   }
 
-  stopTimer () {
-    if (!this._timerId) return false
-    clearInterval(this._timerId)
-    this._timerId = null
+  removeTimer (id) {
+    const entry = this.timers.get(id)
+    if (!entry) return true // 幂等：已不存在的任务视为删除成功
+    if (entry.handle) clearInterval(entry.handle)
+    this.timers.delete(id)
     return true
   }
 
-  getTimerStatus () {
-    return {
-      active: !!this._timerId,
-      message: this._timerMessage || null,
-      intervalMs: this._timerIntervalMs || null,
-      startAt: this._timerStartAt || null,
-      sendCount: this._timerSendCount || 0
+  getTimers () {
+    const list = []
+    for (const t of this.timers.values()) {
+      list.push({
+        id: t.id,
+        message: t.message,
+        intervalMs: t.intervalMs,
+        startAt: t.startAt,
+        sendCount: t.sendCount,
+        active: t.handle !== null
+      })
     }
+    return list
   }
 }

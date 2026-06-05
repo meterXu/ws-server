@@ -85,13 +85,9 @@ demoRouter.post('/api/timer/start', async (ctx) => {
         ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
         return
     }
-    const ok = global.webSocket.startTimer(message, interval * 1000)
-    if (!ok) {
-        ctx.body = { success: false, message: '已有定时任务在运行，请先停止' }
-        return
-    }
-    console.log('[Timer] 定时广播已启动，间隔 ' + interval + 's，消息:', message)
-    ctx.body = { success: true, message: '定时广播已启动', status: global.webSocket.getTimerStatus() }
+    const timer = global.webSocket.startTimer(message, interval * 1000)
+    console.log('[Timer] 定时广播 #' + timer.id + ' 已启动，间隔 ' + interval + 's')
+    ctx.body = { success: true, message: '定时广播已启动', timer }
 })
 
 demoRouter.post('/api/timer/stop', async (ctx) => {
@@ -99,13 +95,36 @@ demoRouter.post('/api/timer/stop', async (ctx) => {
         ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
         return
     }
-    const ok = global.webSocket.stopTimer()
-    if (!ok) {
-        ctx.body = { success: false, message: '当前没有定时任务在运行' }
+    const { id } = ctx.request.body
+    if (!id) {
+        ctx.body = { success: false, message: 'id 不能为空' }
         return
     }
-    console.log('[Timer] 定时广播已停止')
-    ctx.body = { success: true, message: '定时广播已停止', status: global.webSocket.getTimerStatus() }
+    const ok = global.webSocket.stopTimer(id)
+    if (!ok) {
+        ctx.body = { success: false, message: '定时任务不存在或已停止' }
+        return
+    }
+    console.log('[Timer] 定时广播 #' + id + ' 已停止')
+    ctx.body = { success: true, message: '定时广播已停止' }
+})
+
+demoRouter.post('/api/timer/remove', async (ctx) => {
+    if (!global.webSocket) {
+        ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
+        return
+    }
+    const { id } = ctx.request.body
+    if (!id) {
+        ctx.body = { success: false, message: 'id 不能为空' }
+        return
+    }
+    const ok = global.webSocket.removeTimer(id)
+    if (!ok) {
+        ctx.body = { success: false, message: '定时任务不存在' }
+        return
+    }
+    ctx.body = { success: true, message: '定时任务已删除' }
 })
 
 demoRouter.get('/api/timer/status', async (ctx) => {
@@ -113,7 +132,7 @@ demoRouter.get('/api/timer/status', async (ctx) => {
         ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
         return
     }
-    ctx.body = { success: true, status: global.webSocket.getTimerStatus() }
+    ctx.body = { success: true, timers: global.webSocket.getTimers() }
 })
 
 // ---- 页面 ----
