@@ -77,8 +77,8 @@ demoRouter.post('/api/timer/start', async (ctx) => {
         ctx.body = { success: false, message: '消息体不能超过 64KB' }
         return
     }
-    if (!interval || interval < 3) {
-        ctx.body = { success: false, message: 'interval 必须 >= 3 秒' }
+    if (!interval || interval < 1) {
+        ctx.body = { success: false, message: '间隔必须 >= 1 秒' }
         return
     }
     if (!global.webSocket) {
