@@ -152,6 +152,23 @@
     .btn-sm-del { background: #fff; color: #999; border: 1px solid #d9d9d9; }
     .btn-sm-del:hover { background: #fff2f0; color: #ef4444; border-color: #ffccc7; }
 
+	    .btn-sm-save { background: #1677ff; color: #fff; }
+	    .btn-sm-save:hover { background: #0958d9; }
+
+	    .tc-edit-area { margin-bottom: 10px; }
+	    .tc-edit-area label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+	    .tc-edit-msg {
+	      width: 100%; min-height: 70px; font-family: 'SF Mono', 'Fira Code', monospace;
+	      font-size: 12px; padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 6px;
+	      resize: vertical; transition: border-color 0.2s;
+	    }
+	    .tc-edit-msg:focus { outline: none; border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+	    .tc-edit-interval {
+	      width: 120px; padding: 6px 10px; border: 1px solid #d9d9d9;
+	      border-radius: 6px; font-size: 13px; transition: border-color 0.2s;
+	    }
+	    .tc-edit-interval:focus { outline: none; border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+
     /* Log */
     .log-feed {
       max-height: 300px; overflow-y: auto; padding: 8px 0;
@@ -178,9 +195,9 @@
     <h1>定时循环广播</h1>
     <div class="nav">
       <a href="/">首页</a>
-      <a href="/admin">Admin</a>
-      <a href="/timer" class="active">定时广播</a>
-      <a href="/reports">Reports</a>
+      <a href="/admin">推送</a>
+      <a href="/timer" class="active">广播</a>
+      <a href="/reports">日志</a>
     </div>
   </div>
 
@@ -219,7 +236,7 @@
         <div class="form-row" style="margin-top:12px">
           <div style="flex:0 0 180px">
             <label>发送间隔（秒）</label>
-            <input type="number" id="intervalInput" value="5" min="3" max="3600">
+            <input type="number" id="intervalInput" value="2" min="1" max="3600">
           </div>
           <div style="display:flex;align-items:flex-end;padding-bottom:1px">
             <span style="font-size:13px;color:#999">最低 1 秒，建议 ≥ 5 秒</span>
@@ -363,6 +380,52 @@
       }
     }
 
+    async function saveAndRestartTimer(id) {
+      const key = 'edit-restart:' + id;
+      if (busy(key)) return;
+
+      const msgEl = document.querySelector('.tc-edit-msg[data-id="' + id + '"]');
+      const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + id + '"]');
+      if (!msgEl || !intervalEl) { showResult('error', '找不到编辑字段'); return; }
+
+      const raw = msgEl.value.trim();
+      if (!raw) { showResult('error', '消息内容不能为空'); return; }
+
+      let payload;
+      try { payload = JSON.parse(raw); } catch {
+        showResult('error', 'JSON 格式无效'); return;
+      }
+
+      const interval = parseInt(intervalEl.value, 10);
+      if (!interval || interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
+
+      lock(key);
+      try {
+        const [startRes] = await Promise.all([
+          fetch('/api/timer/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: payload, interval })
+          }).then(r => r.json()),
+          fetch('/api/timer/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+          }).then(r => r.json())
+        ]);
+        if (startRes.success) {
+          showResult('success', '定时器已更新并重启为新 #' + startRes.timer.id);
+          await refreshStatus();
+        } else {
+          showResult('error', startRes.message);
+        }
+      } catch (err) {
+        showResult('error', '请求失败: ' + err.message);
+      } finally {
+        unlock(key);
+      }
+    }
+
     async function removeTimer(id) {
       try {
         const res = await fetch('/api/timer/remove', {
@@ -402,26 +465,74 @@
 
       container.innerHTML = timers.map(t => {
         const active = t.active;
+        if (active) {
+          return `
+            <div class="timer-card active" data-timer-id="${t.id}">
+              <div class="tc-header">
+                <span class="tc-id">定时器 #${t.id}</span>
+                <span class="badge badge-running">运行中</span>
+              </div>
+              <div class="tc-msg" title="${escAttr(JSON.stringify(t.message))}">${escHtml(JSON.stringify(t.message))}</div>
+              <div class="tc-meta">
+                <span>间隔: ${t.intervalMs / 1000}s</span>
+                <span class="tc-send-count">已发送: ${t.sendCount} 次</span>
+                <span class="tc-elapsed">已运行: ${elapsed(t.startAt)}</span>
+              </div>
+              <div class="tc-actions">
+                <button class="btn-sm btn-sm-stop" onclick="stopTimer(${t.id})">停止</button>
+                <button class="btn-sm btn-sm-del" onclick="removeTimer(${t.id})">删除</button>
+              </div>
+            </div>`;
+        }
+        const editRaw = t._editRaw !== undefined ? t._editRaw : JSON.stringify(t.message);
+        const editInterval = t._editInterval !== undefined ? t._editInterval : (t.intervalMs / 1000);
         return `
-          <div class="timer-card ${active ? 'active' : 'stopped'}">
+          <div class="timer-card stopped" data-timer-id="${t.id}">
             <div class="tc-header">
               <span class="tc-id">定时器 #${t.id}</span>
-              <span class="badge ${active ? 'badge-running' : 'badge-stopped'}">${active ? '运行中' : '已停止'}</span>
+              <span class="badge badge-stopped">已停止</span>
             </div>
-            <div class="tc-msg" title="${escAttr(JSON.stringify(t.message))}">${escHtml(JSON.stringify(t.message))}</div>
+            <div class="tc-edit-area">
+              <label>消息内容（JSON）</label>
+              <textarea class="tc-edit-msg" data-id="${t.id}">${escHtml(editRaw)}</textarea>
+            </div>
+            <div class="tc-edit-area">
+              <label>发送间隔（秒，最低 1 秒）</label>
+              <input type="number" class="tc-edit-interval" data-id="${t.id}" value="${editInterval}" min="1" max="3600">
+            </div>
             <div class="tc-meta">
-              <span>间隔: ${t.intervalMs / 1000}s</span>
-              <span>已发送: ${t.sendCount} 次</span>
-              ${active ? '<span>已运行: ' + elapsed(t.startAt) + '</span>' : ''}
+              <span class="tc-send-count">已发送: ${t.sendCount} 次</span>
             </div>
             <div class="tc-actions">
-              ${active
-                ? '<button class="btn-sm btn-sm-stop" onclick="stopTimer(' + t.id + ')">停止</button>'
-                : '<button class="btn-sm btn-sm-start" onclick="restartTimer(' + t.id + ')">重启</button>'}
-              <button class="btn-sm btn-sm-del" onclick="removeTimer(' + t.id + ')">删除</button>
+              <button class="btn-sm btn-sm-save" onclick="saveAndRestartTimer(${t.id})">保存并重启</button>
+              <button class="btn-sm btn-sm-del" onclick="removeTimer(${t.id})">删除</button>
             </div>
           </div>`;
       }).join('');
+    }
+
+    function sameStructure(oldList, newList) {
+      if (!oldList || oldList.length !== newList.length) return false;
+      for (let i = 0; i < oldList.length; i++) {
+        if (oldList[i].id !== newList[i].id) return false;
+        if (oldList[i].active !== newList[i].active) return false;
+      }
+      return true;
+    }
+
+    function updateDynamicFields(timers) {
+      const container = $('timerList');
+      $('activeCount').textContent = timers.filter(t => t.active).length;
+      $('totalSends').textContent = timers.reduce((s, t) => s + t.sendCount, 0);
+      for (const t of timers) {
+        if (!t.active) continue;
+        const card = container.querySelector('.timer-card[data-timer-id="' + t.id + '"]');
+        if (!card) continue; // DOM mismatch, fall back to full render next poll
+        const sendEl = card.querySelector('.tc-send-count');
+        if (sendEl) sendEl.textContent = '已发送: ' + t.sendCount + ' 次';
+        const elapsedEl = card.querySelector('.tc-elapsed');
+        if (elapsedEl) elapsedEl.textContent = '已运行: ' + elapsed(t.startAt);
+      }
     }
 
     function escHtml(s) {
@@ -464,7 +575,21 @@
               addLogEntry(t.id, t.sendCount, cs.clientCount);
             }
           }
-          renderTimerList(ts.timers);
+          if (sameStructure(prevTimers, ts.timers)) {
+            // Structure unchanged: only update dynamic numbers, don't touch DOM
+            updateDynamicFields(ts.timers);
+          } else {
+            // Structure changed: preserve in-progress edits, then full re-render
+            for (const t of ts.timers) {
+              if (!t.active) {
+                const msgEl = document.querySelector('.tc-edit-msg[data-id="' + t.id + '"]');
+                const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + t.id + '"]');
+                if (msgEl) t._editRaw = msgEl.value;
+                if (intervalEl) t._editInterval = intervalEl.value;
+              }
+            }
+            renderTimerList(ts.timers);
+          }
           prevTimers = ts.timers;
         }
       } catch {}

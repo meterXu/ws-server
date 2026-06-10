@@ -124,6 +124,23 @@ export default class WS {
     }
   }
 
+  sendToClientById (id, data) {
+    const client = this.clients.get(id)
+    if (!client || client.ws.readyState !== WebSocket.OPEN) {
+      return false
+    }
+    const message = JSON.stringify(data)
+    if (message.length > MAX_MESSAGE_SIZE) {
+      console.warn(`[WS] 消息过大被拒绝: ${message.length} bytes (上限 ${MAX_MESSAGE_SIZE} bytes)`)
+      return false
+    }
+    client.ws.send(message)
+    this._totalBytesSent += message.length
+    this._totalSendCount++
+    this._addLog('send', { clientId: id, ip: client.ip, data: data, bytes: message.length })
+    return true
+  }
+
   // ---- 定时广播 ----
 
   startTimer (message, intervalMs) {

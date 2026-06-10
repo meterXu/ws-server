@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebSocket 管理页面</title>
+  <title>消息推送</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -91,6 +91,60 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
+    /* Client list */
+    .panel-header .hint { font-size: 12px; color: #999; font-weight: 400; }
+
+    .client-list { max-height: 420px; overflow-y: auto; }
+    .client-list .empty { color: #bbb; text-align: center; padding: 30px 0; font-size: 13px; }
+    .client-row {
+      display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px;
+      padding: 14px 0; border-bottom: 1px solid #f5f5f5; transition: background 0.15s;
+    }
+    .client-row:last-child { border-bottom: none; }
+    .client-row:hover { background: #fafafa; margin: 0 -20px; padding-left: 20px; padding-right: 20px; }
+    .client-info { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 12px; }
+    .client-info .client-id { font-weight: 600; font-size: 14px; color: #1677ff; }
+    .client-info .client-ip { font-size: 13px; color: #555; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .client-info .client-uptime { font-size: 12px; color: #999; }
+    .client-info .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+
+    .btn-sm {
+      padding: 5px 14px; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-sm-send { background: #1677ff; color: #fff; flex-shrink: 0; }
+    .btn-sm-send:hover { background: #0958d9; }
+
+    .client-send-form {
+      width: 100%; margin-top: 6px; padding: 12px;
+      background: #f9fafb; border-radius: 8px; border: 1px solid #eee;
+    }
+    .client-send-form textarea {
+      width: 100%; height: 80px; padding: 10px;
+      border: 1px solid #d9d9d9; border-radius: 6px;
+      font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace;
+      resize: vertical; transition: border-color 0.2s;
+    }
+    .client-send-form textarea:focus {
+      outline: none; border-color: #1677ff;
+      box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+    }
+    .form-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-sm-confirm { background: #22c55e; color: #fff; }
+    .btn-sm-confirm:hover { background: #16a34a; }
+    .btn-sm-confirm:disabled { background: #bbf7d0; cursor: not-allowed; }
+    .btn-sm-cancel { background: #fff; color: #999; border: 1px solid #d9d9d9; }
+    .btn-sm-cancel:hover { background: #f5f5f5; }
+
+    .client-result {
+      margin-top: 8px; padding: 8px 12px; border-radius: 6px;
+      font-size: 12px; display: none;
+    }
+    .client-result.show { display: block; }
+    .client-result.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+    .client-result.error { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
+
     @media (max-width: 768px) {
       .grid-2 { grid-template-columns: 1fr; }
       .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -99,12 +153,12 @@
 </head>
 <body>
   <div class="header">
-    <h1>WebSocket 管理</h1>
+    <h1>消息推送</h1>
     <div class="nav">
       <a href="/">首页</a>
-      <a href="/admin" class="active">Admin</a>
-      <a href="/timer">定时广播</a>
-      <a href="/reports">Reports</a>
+      <a href="/admin" class="active">推送</a>
+      <a href="/timer">广播</a>
+      <a href="/reports">日志</a>
     </div>
   </div>
 
@@ -136,6 +190,19 @@
           <div class="msg-preview">
             <pre id="lastMessage" class="empty">暂无</pre>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client list with per-client send -->
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-header">
+        已连接客户端
+        <span class="hint" id="clientListInfo">共 0 个</span>
+      </div>
+      <div class="panel-body">
+        <div class="client-list" id="clientList">
+          <div class="empty">暂无连接的客户端</div>
         </div>
       </div>
     </div>
@@ -197,12 +264,133 @@
       catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
+    let prevClientIds = [];
+
     async function refreshClients() {
       try {
-        const res = await fetch('/api/clients');
-        const data = await res.json();
-        $('clientCount').textContent = data.clientCount;
+        const [countRes, detailRes] = await Promise.all([
+          fetch('/api/clients'),
+          fetch('/api/clients/detail')
+        ]);
+        const countData = await countRes.json();
+        const detailData = await detailRes.json();
+        $('clientCount').textContent = countData.clientCount;
+        if (detailData.success) {
+          const ids = detailData.clients.map(c => c.id).join(',');
+          if (ids !== prevClientIds) {
+            renderClientList(detailData.clients);
+            prevClientIds = ids;
+          }
+        }
       } catch {}
+    }
+
+    function renderClientList(clients) {
+      const container = $('clientList');
+      $('clientListInfo').textContent = '共 ' + clients.length + ' 个';
+
+      if (clients.length === 0) {
+        // Preserve any open send forms across refresh
+        container.innerHTML = '<div class="empty">暂无连接的客户端</div>';
+        return;
+      }
+
+      const openForms = {};
+      for (const c of clients) {
+        const form = document.getElementById('sendForm-' + c.id);
+        if (form && form.style.display !== 'none') {
+          openForms[c.id] = form.querySelector('textarea').value;
+        }
+      }
+
+      container.innerHTML = clients.map(c => {
+        const uptime = elapsed(Math.floor((Date.now() - new Date(c.connectedAt).getTime()) / 1000));
+        const savedMsg = openForms[c.id] !== undefined ? escHtml(openForms[c.id]) : escHtml(JSON.stringify({type: 'message', content: 'hello'}, null, 2));
+        return `
+          <div class="client-row" data-client-id="${c.id}">
+            <div class="client-info">
+              <span class="dot"></span>
+              <span class="client-id">#${c.id}</span>
+              <span class="client-ip">${escHtml(c.ip)}</span>
+              <span class="client-uptime">已连接 ${uptime}</span>
+            </div>
+            <button class="btn-sm btn-sm-send" onclick="toggleSendForm(${c.id})">
+              ${openForms[c.id] !== undefined ? '收起' : '发送消息'}
+            </button>
+            <div class="client-send-form" id="sendForm-${c.id}" style="display:${openForms[c.id] !== undefined ? 'block' : 'none'}">
+              <textarea id="clientMsg-${c.id}" placeholder='输入 JSON 消息'>${savedMsg}</textarea>
+              <div class="form-actions">
+                <button class="btn-sm btn-sm-confirm" id="clientSendBtn-${c.id}" onclick="sendToClient(${c.id})">发送</button>
+                <button class="btn-sm btn-sm-cancel" onclick="toggleSendForm(${c.id})">取消</button>
+              </div>
+              <div class="client-result" id="clientResult-${c.id}"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function elapsed(s) {
+      if (s < 60) return s + 's';
+      if (s < 3600) return Math.floor(s / 60) + 'min';
+      return Math.floor(s / 3600) + 'h' + Math.floor((s % 3600) / 60) + 'min';
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function toggleSendForm(id) {
+      const form = document.getElementById('sendForm-' + id);
+      const btn = document.querySelector('.client-row[data-client-id="' + id + '"] .btn-sm-send');
+      if (!form) return;
+      const isOpen = form.style.display !== 'none';
+      form.style.display = isOpen ? 'none' : 'block';
+      if (btn) btn.textContent = isOpen ? '发送消息' : '收起';
+      // Clear previous result
+      const result = document.getElementById('clientResult-' + id);
+      if (result) result.className = 'client-result';
+    }
+
+    async function sendToClient(id) {
+      const msgEl = document.getElementById('clientMsg-' + id);
+      const btn = document.getElementById('clientSendBtn-' + id);
+      const resultEl = document.getElementById('clientResult-' + id);
+      const raw = msgEl.value.trim();
+      if (!raw) {
+        showClientResult(resultEl, 'error', '消息内容不能为空');
+        return;
+      }
+      let payload;
+      try { payload = JSON.parse(raw); } catch {
+        showClientResult(resultEl, 'error', 'JSON 格式无效');
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = '发送中...';
+      try {
+        const res = await fetch('/api/client/send/' + id, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showClientResult(resultEl, 'success', data.message);
+        } else {
+          showClientResult(resultEl, 'error', data.message);
+        }
+      } catch (err) {
+        showClientResult(resultEl, 'error', '请求失败: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '发送';
+      }
+    }
+
+    function showClientResult(el, type, msg) {
+      el.className = 'client-result show ' + type;
+      el.textContent = msg;
+      setTimeout(() => { el.className = 'client-result'; }, 5000);
     }
 
     refreshClients();

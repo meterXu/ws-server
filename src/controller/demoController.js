@@ -177,6 +177,27 @@ demoRouter.post('/api/clients/kick/:id', async (ctx) => {
         : { success: false, message: `客户端 #${id} 不存在` }
 })
 
+demoRouter.post('/api/client/send/:id', async (ctx) => {
+    if (!global.webSocket) {
+        ctx.body = { success: false, message: 'WebSocket 服务未初始化' }
+        return
+    }
+    const id = parseInt(ctx.params.id, 10)
+    if (!id) {
+        ctx.body = { success: false, message: '客户端 ID 无效' }
+        return
+    }
+    const data = ctx.request.body
+    if (!data || Object.keys(data).length === 0) {
+        ctx.body = { success: false, message: '消息不能为空' }
+        return
+    }
+    const sent = global.webSocket.sendToClientById(id, data)
+    ctx.body = sent
+        ? { success: true, message: `消息已发送至客户端 #${id}` }
+        : { success: false, message: `客户端 #${id} 不存在或已断开` }
+})
+
 // ---- 系统资源 API ----
 
 demoRouter.get('/api/system/stats', async (ctx) => {
