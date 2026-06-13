@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>消息推送</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -58,6 +59,15 @@
     textarea:focus {
       outline: none; border-color: #1677ff;
       box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+    }
+
+    /* CodeMirror — main form */
+    .panel-body .CodeMirror {
+      border: 1px solid #d9d9d9; border-radius: 8px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .panel-body .CodeMirror-focused {
+      border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
     }
 
     .button-row { display: flex; gap: 10px; margin-top: 16px; }
@@ -175,7 +185,10 @@
       <div class="panel">
         <div class="panel-header">消息编辑</div>
         <div class="panel-body">
-          <textarea id="messageInput" placeholder='输入 JSON 消息，例如：{"type": "notice", "content": "hello"}'>{"type": "broadcast", "message": "这是一条测试消息"}</textarea>
+          <textarea id="messageInput" placeholder='输入 JSON 消息，例如：{"type": "notice", "content": "hello"}'>{
+  "type": "broadcast",
+  "message": "这是一条测试消息"
+}</textarea>
           <div class="button-row">
             <button class="btn-primary" id="sendBtn" onclick="sendMessage()">发送到所有客户端</button>
             <button class="btn-outline" onclick="formatJson()">格式化 JSON</button>
@@ -208,10 +221,47 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
   <script>
     let lastBroadcast = null;
+    let mainEditor = null;
 
     function $(id) { return document.getElementById(id); }
+
+    function formatEditor(cm) {
+      const raw = cm.getValue().trim();
+      if (!raw) return;
+      try {
+        const formatted = JSON.stringify(JSON.parse(raw), null, 2);
+        if (formatted !== raw) {
+          const cursor = cm.getCursor();
+          cm.setValue(formatted);
+          const newLastLine = cm.lastLine();
+          const targetLine = Math.min(cursor.line, newLastLine);
+          cm.setCursor({ line: targetLine, ch: Math.min(cursor.ch, cm.getLine(targetLine).length) });
+        }
+      } catch {
+        // Not valid JSON yet — leave as-is
+      }
+    }
+
+    function initMainEditor() {
+      const ta = $('messageInput');
+      if (!ta) return;
+      mainEditor = CodeMirror.fromTextArea(ta, {
+        mode: { name: 'javascript', json: true },
+        lineNumbers: true,
+        matchBrackets: true,
+        lineWrapping: true,
+        tabSize: 2,
+        indentUnit: 2,
+        extraKeys: { 'Shift-Alt-F': function(cm) { formatEditor(cm); } }
+      });
+      mainEditor.setSize(null, 160);
+      mainEditor.on('blur', () => formatEditor(mainEditor));
+    }
 
     function showResult(type, msg) {
       const el = $('result');
@@ -222,7 +272,7 @@
 
     async function sendMessage() {
       const btn = $('sendBtn');
-      const raw = $('messageInput').value.trim();
+      const raw = mainEditor.getValue().trim();
       if (!raw) { showResult('error', '消息内容不能为空'); return; }
 
       let payload;
@@ -259,8 +309,8 @@
     }
 
     function formatJson() {
-      const raw = $('messageInput').value.trim();
-      try { $('messageInput').value = JSON.stringify(JSON.parse(raw), null, 2); }
+      const raw = mainEditor.getValue().trim();
+      try { mainEditor.setValue(JSON.stringify(JSON.parse(raw), null, 2)); }
       catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
@@ -393,6 +443,7 @@
       setTimeout(() => { el.className = 'client-result'; }, 5000);
     }
 
+    initMainEditor();
     refreshClients();
     setInterval(refreshClients, 5000);
   </script>

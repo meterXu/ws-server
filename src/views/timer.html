@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>定时广播</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -70,6 +71,15 @@
       box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
     }
 
+    /* CodeMirror — main form */
+    .form-row .CodeMirror {
+      border: 1px solid #d9d9d9; border-radius: 8px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-row .CodeMirror-focused {
+      border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+    }
+
     .form-row { display: flex; gap: 12px; align-items: flex-end; }
     .form-row > div { flex: 1; }
     .form-row label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
@@ -99,7 +109,10 @@
 
     /* Timer cards */
     .timer-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 12px;
+      align-items: start;
     }
     .timer-grid .empty {
       grid-column: 1 / -1; text-align: center; color: #bbb;
@@ -107,6 +120,7 @@
     }
 
     .timer-card {
+      min-width: 0; /* 防止长内容撑大列宽、挤压相邻卡片 */
       border: 1px solid #f0f0f0; border-radius: 10px;
       padding: 16px; background: #fafafa;
       transition: box-shadow 0.2s, border-color 0.2s;
@@ -152,17 +166,20 @@
     .btn-sm-del { background: #fff; color: #999; border: 1px solid #d9d9d9; }
     .btn-sm-del:hover { background: #fff2f0; color: #ef4444; border-color: #ffccc7; }
 
+	    .btn-sm-format { background: #fff; color: #1677ff; border: 1px solid #1677ff; }
+	    .btn-sm-format:hover { background: #f0f5ff; }
 	    .btn-sm-save { background: #1677ff; color: #fff; }
 	    .btn-sm-save:hover { background: #0958d9; }
 
 	    .tc-edit-area { margin-bottom: 10px; }
 	    .tc-edit-area label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
-	    .tc-edit-msg {
-	      width: 100%; min-height: 70px; font-family: 'SF Mono', 'Fira Code', monospace;
-	      font-size: 12px; padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 6px;
-	      resize: vertical; transition: border-color 0.2s;
+	    .tc-edit-cm { border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; }
+	    .tc-edit-cm .CodeMirror {
+	      height: auto; min-height: 70px; font-size: 12px;
+	      font-family: 'SF Mono', 'Fira Code', monospace; border-radius: 6px;
 	    }
-	    .tc-edit-msg:focus { outline: none; border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+	    .tc-edit-cm .CodeMirror-scroll { min-height: 70px; }
+	    .tc-edit-cm.focused { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
 	    .tc-edit-interval {
 	      width: 120px; padding: 6px 10px; border: 1px solid #d9d9d9;
 	      border-radius: 6px; font-size: 13px; transition: border-color 0.2s;
@@ -230,7 +247,10 @@
         <div class="form-row">
           <div>
             <label>消息内容（JSON）</label>
-            <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{"type":"timer","message":"定时广播消息"}</textarea>
+            <textarea id="messageInput" placeholder='{"type":"ping","data":"hello"}'>{
+  "type": "timer",
+  "message": "定时广播消息"
+}</textarea>
           </div>
         </div>
         <div class="form-row" style="margin-top:12px">
@@ -269,16 +289,107 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
   <script>
     let pollTimer = null;
     let prevTimers = [];
     let pendingOps = new Set(); // 防止重复操作
+    let mainEditor = null;
+    let timerEditors = new Map(); // id -> { editor, wrapper }
 
     function $(id) { return document.getElementById(id); }
+
+    function formatEditor(cm) {
+      const raw = cm.getValue().trim();
+      if (!raw) return;
+      try {
+        const formatted = JSON.stringify(JSON.parse(raw), null, 2);
+        if (formatted !== raw) {
+          const cursor = cm.getCursor();
+          cm.setValue(formatted);
+          // Restore cursor position as close as possible
+          const newLastLine = cm.lastLine();
+          const targetLine = Math.min(cursor.line, newLastLine);
+          cm.setCursor({ line: targetLine, ch: Math.min(cursor.ch, cm.getLine(targetLine).length) });
+        }
+      } catch {
+        // Not valid JSON yet — leave as-is so the user can keep typing
+      }
+    }
+
+    function initMainEditor() {
+      const ta = $('messageInput');
+      if (!ta) return;
+      mainEditor = CodeMirror.fromTextArea(ta, {
+        mode: { name: 'javascript', json: true },
+        lineNumbers: true,
+        matchBrackets: true,
+        lineWrapping: true,
+        tabSize: 2,
+        indentUnit: 2,
+        extraKeys: { 'Shift-Alt-F': function(cm) { formatEditor(cm); } }
+      });
+      mainEditor.setSize(null, 100);
+      mainEditor.on('blur', () => formatEditor(mainEditor));
+    }
+
+    function destroyTimerEditors() {
+      for (const [id, { editor, wrapper }] of timerEditors) {
+        const parent = wrapper.parentElement;
+        if (parent) {
+          // Restore the textarea from CodeMirror before removing the wrapper
+          const ta = wrapper.querySelector('textarea');
+          if (ta) {
+            ta.value = editor.getValue();
+            parent.replaceChild(ta, wrapper);
+          }
+        }
+      }
+      timerEditors.clear();
+    }
+
+    function initTimerEditors() {
+      document.querySelectorAll('.tc-edit-msg').forEach(ta => {
+        const id = ta.getAttribute('data-id');
+        if (!id || timerEditors.has(id)) return;
+
+        // Wrap textarea in a container for border/focus styling
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tc-edit-cm';
+        ta.parentElement.insertBefore(wrapper, ta);
+        wrapper.appendChild(ta);
+
+        const editor = CodeMirror.fromTextArea(ta, {
+          mode: { name: 'javascript', json: true },
+          lineNumbers: true,
+          matchBrackets: true,
+          lineWrapping: true,
+          tabSize: 2,
+          indentUnit: 2,
+          extraKeys: { 'Shift-Alt-F': function(cm) { formatEditor(cm); } }
+        });
+        editor.setSize(null, 80);
+
+        editor.on('focus', () => wrapper.classList.add('focused'));
+        editor.on('blur', () => {
+          wrapper.classList.remove('focused');
+          formatEditor(editor);
+        });
+
+        timerEditors.set(id, { editor, wrapper });
+      });
+    }
 
     function busy(id) { return pendingOps.has(id); }
     function lock(id) { pendingOps.add(id); }
     function unlock(id) { pendingOps.delete(id); }
+
+    function formatTimerEditor(id) {
+      const entry = timerEditors.get(String(id));
+      if (entry) formatEditor(entry.editor);
+    }
 
     function showResult(type, msg) {
       const el = $('result');
@@ -295,7 +406,7 @@
     }
 
     async function addTimer() {
-      const raw = $('messageInput').value.trim();
+      const raw = mainEditor.getValue().trim();
       if (!raw) { showResult('error', '消息内容不能为空'); return; }
 
       let payload;
@@ -384,11 +495,11 @@
       const key = 'edit-restart:' + id;
       if (busy(key)) return;
 
-      const msgEl = document.querySelector('.tc-edit-msg[data-id="' + id + '"]');
+      const entry = timerEditors.get(String(id));
       const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + id + '"]');
-      if (!msgEl || !intervalEl) { showResult('error', '找不到编辑字段'); return; }
+      if (!entry || !intervalEl) { showResult('error', '找不到编辑字段'); return; }
 
-      const raw = msgEl.value.trim();
+      const raw = entry.editor.getValue().trim();
       if (!raw) { showResult('error', '消息内容不能为空'); return; }
 
       let payload;
@@ -446,13 +557,14 @@
     }
 
     function formatJson() {
-      const raw = $('messageInput').value.trim();
-      try { $('messageInput').value = JSON.stringify(JSON.parse(raw), null, 2); }
+      const raw = mainEditor.getValue().trim();
+      try { mainEditor.setValue(JSON.stringify(JSON.parse(raw), null, 2)); }
       catch { showResult('error', 'JSON 格式无效，无法格式化'); }
     }
 
     function renderTimerList(timers) {
       const container = $('timerList');
+      destroyTimerEditors();
 
       $('activeCount').textContent = timers.filter(t => t.active).length;
       $('totalTimerCount').textContent = '共 ' + timers.length + ' 个定时器';
@@ -484,7 +596,7 @@
               </div>
             </div>`;
         }
-        const editRaw = t._editRaw !== undefined ? t._editRaw : JSON.stringify(t.message);
+        const editRaw = t._editRaw !== undefined ? t._editRaw : JSON.stringify(t.message, null, 2);
         const editInterval = t._editInterval !== undefined ? t._editInterval : (t.intervalMs / 1000);
         return `
           <div class="timer-card stopped" data-timer-id="${t.id}">
@@ -504,11 +616,15 @@
               <span class="tc-send-count">已发送: ${t.sendCount} 次</span>
             </div>
             <div class="tc-actions">
+              <button class="btn-sm btn-sm-format" onclick="formatTimerEditor(${t.id})">格式化</button>
               <button class="btn-sm btn-sm-save" onclick="saveAndRestartTimer(${t.id})">保存并重启</button>
               <button class="btn-sm btn-sm-del" onclick="removeTimer(${t.id})">删除</button>
             </div>
           </div>`;
       }).join('');
+
+      // Activate CodeMirror on newly rendered textareas
+      initTimerEditors();
     }
 
     function sameStructure(oldList, newList) {
@@ -582,9 +698,9 @@
             // Structure changed: preserve in-progress edits, then full re-render
             for (const t of ts.timers) {
               if (!t.active) {
-                const msgEl = document.querySelector('.tc-edit-msg[data-id="' + t.id + '"]');
+                const entry = timerEditors.get(String(t.id));
                 const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + t.id + '"]');
-                if (msgEl) t._editRaw = msgEl.value;
+                if (entry) t._editRaw = entry.editor.getValue();
                 if (intervalEl) t._editInterval = intervalEl.value;
               }
             }
@@ -595,6 +711,7 @@
       } catch {}
     }
 
+    initMainEditor();
     refreshStatus();
     pollTimer = setInterval(refreshStatus, 2000);
   </script>
