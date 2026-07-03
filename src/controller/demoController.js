@@ -7,6 +7,9 @@ const dataMap = new Map()
 let syncData = ""
 const MAX_REPORT_LOGS = 200
 const reportLogs = []
+const MAX_AUTO_REPLY_RULES = 50
+export const autoReplyRules = []
+let _nextRuleId = 0
 import path from "node:path"
 import fs from "node:fs"
 import os from "node:os"
@@ -24,7 +27,6 @@ demoRouter.get('/api', async (ctx) => {
 
 demoRouter.post('/api/report', (ctx) => {
     console.log(ctx.request.body)
-    global.webSocket.sendToClient(ctx.request.body)
     const entry = {
         time: new Date().toISOString(),
         ip: ctx.request.ip || ctx.ip || 'unknown',
@@ -33,6 +35,30 @@ demoRouter.post('/api/report', (ctx) => {
     }
     reportLogs.push(entry)
     if (reportLogs.length > MAX_REPORT_LOGS) reportLogs.shift()
+
+    // 自动回复规则匹配
+    const bodyStr = typeof ctx.request.body === 'string'
+        ? ctx.request.body
+        : JSON.stringify(ctx.request.body)
+    let matched = false
+    for (const rule of autoReplyRules) {
+        if (!rule.enabled) continue
+        try {
+            if (new RegExp(rule.pattern).test(bodyStr)) {
+                rule.matchCount++
+                rule.lastMatch = new Date().toISOString()
+                const reply = { type: 'auto-reply', rule: rule.name, content: rule.reply }
+                global.webSocket.sendToClient(reply)
+                console.log(`[AutoReply] 规则"${rule.name}"已匹配，自动回复已发送`)
+                matched = true
+            }
+        } catch (_) { /* 无效正则跳过 */ }
+    }
+
+    if (!matched) {
+        global.webSocket.sendToClient(ctx.request.body)
+    }
+
     ctx.body = {
         code:0,
         success: true,
@@ -266,6 +292,83 @@ demoRouter.get('/api/reports', async (ctx) => {
         total: reportLogs.length,
         reports: reportLogs.slice(-Math.min(limit, 200)).reverse()
     }
+})
+
+// ---- 自动回复规则 API ----
+
+demoRouter.get('/api/auto-reply/rules', async (ctx) => {
+    ctx.body = { success: true, rules: autoReplyRules }
+})
+
+demoRouter.post('/api/auto-reply/rules', async (ctx) => {
+    const { name, pattern, reply, enabled } = ctx.request.body
+    if (!name || !pattern || !reply) {
+        ctx.body = { success: false, message: 'name, pattern, reply 不能为空' }
+        return
+    }
+    if (autoReplyRules.length >= MAX_AUTO_REPLY_RULES) {
+        ctx.body = { success: false, message: `规则数量已达上限 ${MAX_AUTO_REPLY_RULES}` }
+        return
+    }
+    try { new RegExp(pattern) } catch (_) {
+        ctx.body = { success: false, message: '正则表达式无效' }
+        return
+    }
+    const rule = {
+        id: ++_nextRuleId,
+        name,
+        pattern,
+        reply,
+        enabled: enabled !== false,
+        matchCount: 0,
+        lastMatch: null,
+        createdAt: new Date().toISOString()
+    }
+    autoReplyRules.push(rule)
+    ctx.body = { success: true, rule }
+})
+
+demoRouter.put('/api/auto-reply/rules/:id', async (ctx) => {
+    const id = parseInt(ctx.params.id, 10)
+    const rule = autoReplyRules.find(r => r.id === id)
+    if (!rule) {
+        ctx.body = { success: false, message: '规则不存在' }
+        return
+    }
+    const { name, pattern, reply, enabled } = ctx.request.body
+    if (pattern !== undefined) {
+        try { new RegExp(pattern) } catch (_) {
+            ctx.body = { success: false, message: '正则表达式无效' }
+            return
+        }
+        rule.pattern = pattern
+    }
+    if (name !== undefined) rule.name = name
+    if (reply !== undefined) rule.reply = reply
+    if (enabled !== undefined) rule.enabled = enabled
+    ctx.body = { success: true, rule }
+})
+
+demoRouter.delete('/api/auto-reply/rules/:id', async (ctx) => {
+    const id = parseInt(ctx.params.id, 10)
+    const idx = autoReplyRules.findIndex(r => r.id === id)
+    if (idx === -1) {
+        ctx.body = { success: false, message: '规则不存在' }
+        return
+    }
+    autoReplyRules.splice(idx, 1)
+    ctx.body = { success: true }
+})
+
+demoRouter.post('/api/auto-reply/rules/:id/toggle', async (ctx) => {
+    const id = parseInt(ctx.params.id, 10)
+    const rule = autoReplyRules.find(r => r.id === id)
+    if (!rule) {
+        ctx.body = { success: false, message: '规则不存在' }
+        return
+    }
+    rule.enabled = !rule.enabled
+    ctx.body = { success: true, rule }
 })
 
 export {demoRouter}

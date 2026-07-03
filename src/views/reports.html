@@ -85,13 +85,97 @@
     }
     .copy-btn:hover { color: #1677ff; border-color: #1677ff; }
 
+    .source-badge {
+      display: inline-block; font-size: 10px; padding: 1px 6px;
+      border-radius: 8px; font-weight: 500; line-height: 18px; white-space: nowrap;
+    }
+    .source-badge.http { background: #e6f4ff; color: #1677ff; }
+    .source-badge.ws { background: #f6ffed; color: #22c55e; }
+    .source-badge.reply { background: #fff7e6; color: #d48806; }
+
+    .ws-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #999; }
+    .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; transition: background 0.3s; }
+    .ws-dot.on { background: #22c55e; }
+
     .empty {
       text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px;
     }
     .empty .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
 
+    .rule-form {
+      display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px;
+      padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
+      align-items: end;
+    }
+    .rule-form .field { display: flex; flex-direction: column; gap: 4px; }
+    .rule-form .field label { font-size: 12px; color: #666; font-weight: 500; }
+    .rule-form .field input, .rule-form .field textarea {
+      border: 1px solid #d9d9d9; border-radius: 6px; padding: 6px 10px;
+      font-size: 13px; font-family: inherit; outline: none;
+    }
+    .rule-form .field input:focus, .rule-form .field textarea:focus { border-color: #1677ff; }
+    .rule-form .field textarea { resize: vertical; min-height: 32px; height: 32px; }
+    .rule-form .actions {
+      display: flex; align-items: center; gap: 8px; padding-bottom: 2px;
+    }
+    .rule-form .actions label { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+    .btn {
+      font-size: 12px; padding: 6px 14px; border-radius: 6px; border: none;
+      cursor: pointer; font-weight: 500; transition: all 0.2s;
+    }
+    .btn-primary { background: #1677ff; color: #fff; }
+    .btn-primary:hover { background: #4096ff; }
+    .btn-danger { background: #fff; color: #ef4444; border: 1px solid #ef4444; }
+    .btn-danger:hover { background: #fef2f2; }
+    .btn-sm { padding: 2px 10px; font-size: 11px; }
+
+    .rule-list { padding: 0; }
+    .rule-item {
+      display: grid; grid-template-columns: 1fr 1.5fr 2fr auto;
+      gap: 12px; padding: 12px 20px; border-bottom: 1px solid #f5f5f5;
+      align-items: center; font-size: 13px;
+    }
+    .rule-item:last-child { border-bottom: none; }
+    .rule-item .rule-name { font-weight: 500; }
+    .rule-item .rule-pattern {
+      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+      color: #722ed1; background: #f9f0ff; padding: 2px 8px; border-radius: 4px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .rule-item .rule-reply {
+      color: #666; font-size: 12px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; max-width: 320px;
+    }
+    .rule-item .rule-actions {
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    .rule-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .rule-meta .matched { color: #22c55e; font-weight: 500; }
+
+    .toggle-switch {
+      position: relative; display: inline-block; width: 36px; height: 20px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc; border-radius: 20px; transition: 0.3s;
+    }
+    .toggle-slider:before {
+      content: ""; position: absolute; height: 14px; width: 14px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    .inline-edit { display: none; }
+    .rule-item.editing .inline-edit { display: block; }
+    .rule-item.editing .inline-view { display: none; }
+
     @media (max-width: 768px) {
       .grid-3 { grid-template-columns: repeat(2, 1fr); }
+      .rule-form { grid-template-columns: 1fr 1fr; }
+      .rule-item { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -125,24 +209,63 @@
       </div>
     </div>
 
+    <div class="panel" style="margin-bottom:20px">
+      <div class="panel-header">发送测试数据</div>
+      <div style="padding:12px 20px;display:flex;gap:10px;align-items:flex-end">
+        <textarea id="testBody" placeholder='输入测试 JSON，例如：{"message":"error occurred"}' style="flex:1;border:1px solid #d9d9d9;border-radius:6px;padding:8px 10px;font-size:13px;font-family:'SF Mono','Fira Code',monospace;resize:vertical;min-height:36px;height:36px;outline:none"></textarea>
+        <button class="btn btn-primary" id="testSendBtn" onclick="sendTest()" style="height:36px;white-space:nowrap">发送测试</button>
+        <span id="testResult" style="font-size:12px;color:#999;white-space:nowrap;min-width:60px"></span>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="panel-header">
-        接收消息列表
-        <span class="badge" id="listBadge">0 条</span>
+        <span>接收消息列表 <span class="badge" id="listBadge">0 条</span></span>
+        <span class="ws-status"><span class="ws-dot" id="wsDot"></span><span id="wsLabel">WS 未连接</span></span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th style="width:100px">时间</th>
-              <th style="width:130px">来源 IP</th>
+              <th style="width:60px">来源</th>
+              <th style="width:120px">来源 IP</th>
               <th>消息内容</th>
             </tr>
           </thead>
           <tbody id="reportTbody">
-            <tr><td colspan="3"><div class="empty"><div class="icon">-</div>暂无数据，等待 /api/report 请求</div></td></tr>
+            <tr><td colspan="4"><div class="empty"><div class="icon">-</div>暂无数据，等待消息</div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px">
+      <div class="panel-header">
+        自动回复规则
+        <span class="badge" id="ruleBadge">0 条规则</span>
+      </div>
+      <div class="rule-form" id="ruleForm">
+        <div class="field">
+          <label>规则名称</label>
+          <input id="ruleName" placeholder="例如：错误告警回复" />
+        </div>
+        <div class="field">
+          <label>正则匹配</label>
+          <input id="rulePattern" placeholder="例如：error|fail" />
+        </div>
+        <div class="field">
+          <label>自动回复内容</label>
+          <textarea id="ruleReply" placeholder="匹配时自动回复的内容"></textarea>
+        </div>
+        <div class="actions">
+          <label><input type="checkbox" id="ruleEnabled" checked /> 启用</label>
+          <button class="btn btn-primary" id="ruleSaveBtn" onclick="saveRule()">添加规则</button>
+          <button class="btn" id="ruleCancelBtn" style="display:none;background:#f5f5f5" onclick="cancelEdit()">取消</button>
+        </div>
+      </div>
+      <div class="rule-list" id="ruleList">
+        <div class="empty"><div class="icon">-</div>暂无自动回复规则</div>
       </div>
     </div>
   </div>
@@ -185,7 +308,6 @@
         btn.textContent = '已复制';
         setTimeout(() => { btn.textContent = '复制'; }, 1500);
       } catch {
-        // fallback
         const ta = document.createElement('textarea');
         ta.value = raw;
         ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -202,58 +324,302 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // ---- WebSocket ----
+
+    const MAX_WS_MESSAGES = 200;
+    const wsMessages = [];
+    let wsConnected = false;
+
+    function connectWS() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(protocol + '//' + location.host + '/ws');
+      ws.onopen = () => {
+        wsConnected = true;
+        $('wsDot').classList.add('on');
+        $('wsLabel').textContent = 'WS 已连接';
+      };
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'welcome') return;
+          wsMessages.push({ time: new Date().toISOString(), data });
+          if (wsMessages.length > MAX_WS_MESSAGES) wsMessages.shift();
+          renderTable();
+        } catch {}
+      };
+      ws.onclose = () => {
+        wsConnected = false;
+        $('wsDot').classList.remove('on');
+        $('wsLabel').textContent = 'WS 断开，3s后重连';
+        setTimeout(connectWS, 3000);
+      };
+      ws.onerror = () => { ws.close(); };
+    }
+
+    // ---- 消息列表 ----
+
+    let reportEntries = [];
+
+    function renderTable() {
+      const tbody = $('reportTbody');
+
+      const httpRows = reportEntries.map(r => ({
+        time: r.time,
+        source: 'http',
+        ip: r.ip || 'unknown',
+        body: typeof r.body === 'string' ? r.body : JSON.stringify(r.body, null, 2)
+      }));
+      const wsRows = wsMessages.map(m => {
+        const isReply = m.data.type === 'auto-reply';
+        const isWsMsg = m.data.type === 'ws-message';
+        let body, ip = '-', ruleName = null;
+        if (isReply) {
+          body = m.data.content || JSON.stringify(m.data);
+          ruleName = m.data.rule;
+        } else if (isWsMsg) {
+          body = typeof m.data.data === 'string' ? m.data.data : JSON.stringify(m.data.data, null, 2);
+          ip = '客户端 #' + (m.data.clientId || '?');
+        } else {
+          body = JSON.stringify(m.data, null, 2);
+        }
+        return { time: m.time, source: isReply ? 'reply' : 'ws', ip, body, ruleName };
+      });
+      const all = [...httpRows, ...wsRows].sort((a, b) => b.time.localeCompare(a.time));
+
+      $('listBadge').textContent = all.length + ' 条';
+
+      if (all.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty"><div class="icon">-</div>暂无数据，等待消息</div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = all.map(r => {
+        const sourceLabel = r.source === 'http' ? 'HTTP' : r.source === 'reply' ? '自动回复' : 'WS';
+        const sourceCls = r.source;
+        const bodyStr = r.body;
+        const truncated = bodyStr.length > 120;
+        const prefix = r.ruleName ? '<span style="color:#d48806">[' + escapeHtml(r.ruleName) + ']</span> ' : '';
+        return '<tr>' +
+          '<td class="time">' + timePart(r.time) + '<br><span style="font-size:10px;color:#bbb">' + datePart(r.time) + '</span></td>' +
+          '<td><span class="source-badge ' + sourceCls + '">' + sourceLabel + '</span></td>' +
+          '<td class="ip">' + escapeHtml(r.ip) + '</td>' +
+          '<td class="body" data-raw=\'' + JSON.stringify(bodyStr) + '\'>' +
+            (truncated
+              ? '<div class="json-preview">' + prefix + escapeHtml(bodyStr.slice(0, 120)) + '...</div>' +
+                '<div class="json-expanded" style="display:none">' + prefix + escapeHtml(bodyStr) + '</div>' +
+                '<button class="expand-btn" onclick="toggleExpand(this)">展开</button>'
+              : '<div class="json-expanded">' + prefix + escapeHtml(bodyStr) + '</div>') +
+            ' <button class="copy-btn" onclick="copyBody(this)">复制</button>' +
+          '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
     async function refreshAll() {
       try {
         const res = await fetch('/api/reports?limit=100');
         const data = await res.json();
         if (!data.success) return;
 
-        const reports = data.reports || [];
+        reportEntries = data.reports || [];
         $('totalCount').textContent = data.total || 0;
-        $('listBadge').textContent = (data.total || 0) + ' 条';
 
-        // today count
         const today = new Date().toISOString().slice(0, 10);
         let todayCount = 0;
-        for (const r of reports) {
+        for (const r of reportEntries) {
           if (r.time && r.time.slice(0, 10) === today) todayCount++;
         }
         $('todayCount').textContent = todayCount;
         $('todayDate').textContent = today;
 
-        // last
-        if (reports.length > 0) {
-          $('lastTime').textContent = timePart(reports[0].time);
-          $('lastIp').textContent = '来自 ' + (reports[0].ip || 'unknown');
+        if (reportEntries.length > 0) {
+          $('lastTime').textContent = timePart(reportEntries[0].time);
+          $('lastIp').textContent = '来自 ' + (reportEntries[0].ip || 'unknown');
         }
 
-        // table
-        const tbody = $('reportTbody');
-        if (reports.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="icon">-</div>暂无数据，等待 /api/report 请求</div></td></tr>';
+        renderTable();
+      } catch {}
+    }
+
+    // ---- 测试发送 ----
+
+    async function sendTest() {
+      const input = $('testBody').value.trim();
+      if (!input) {
+        $('testResult').textContent = '请输入数据';
+        $('testResult').style.color = '#ef4444';
+        return;
+      }
+      let body;
+      try { body = JSON.parse(input); } catch (_) { body = { data: input }; }
+      $('testResult').textContent = '发送中...';
+      $('testResult').style.color = '#999';
+      $('testSendBtn').disabled = true;
+      try {
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+          $('testResult').textContent = '已发送';
+          $('testResult').style.color = '#22c55e';
+          $('testBody').value = '';
+          setTimeout(refreshAll, 500);
         } else {
-          tbody.innerHTML = reports.map(r => {
-            const bodyStr = typeof r.body === 'string' ? r.body : JSON.stringify(r.body, null, 2);
-            const truncated = bodyStr.length > 120;
-            return '<tr>' +
-              '<td class="time">' + timePart(r.time) + '<br><span style="font-size:10px;color:#bbb">' + datePart(r.time) + '</span></td>' +
-              '<td class="ip">' + (r.ip || 'unknown') + '</td>' +
-              '<td class="body" data-raw=\'' + JSON.stringify(bodyStr) + '\'>' +
-                (truncated
-                  ? '<div class="json-preview">' + escapeHtml(bodyStr.slice(0, 120)) + '...</div>' +
-                    '<div class="json-expanded" style="display:none">' + escapeHtml(bodyStr) + '</div>' +
-                    '<button class="expand-btn" onclick="toggleExpand(this)">展开</button>'
-                  : '<div class="json-expanded">' + escapeHtml(bodyStr) + '</div>') +
-                ' <button class="copy-btn" onclick="copyBody(this)">复制</button>' +
-              '</td>' +
-              '</tr>';
+          $('testResult').textContent = '发送失败';
+          $('testResult').style.color = '#ef4444';
+        }
+      } catch (_) {
+        $('testResult').textContent = '网络错误';
+        $('testResult').style.color = '#ef4444';
+      }
+      $('testSendBtn').disabled = false;
+      setTimeout(() => { $('testResult').textContent = ''; }, 3000);
+    }
+
+    // ---- 自动回复规则 ----
+
+    let editingRuleId = null;
+
+    async function refreshRules() {
+      try {
+        const res = await fetch('/api/auto-reply/rules');
+        const data = await res.json();
+        if (!data.success) return;
+        const rules = data.rules || [];
+        $('ruleBadge').textContent = rules.length + ' 条规则';
+
+        const container = $('ruleList');
+        if (rules.length === 0) {
+          container.innerHTML = '<div class="empty"><div class="icon">-</div>暂无自动回复规则</div>';
+        } else {
+          container.innerHTML = rules.map(r => {
+            const timeStr = r.lastMatch ? new Date(r.lastMatch).toLocaleString('zh-CN') : '--';
+            return '<div class="rule-item" id="ruleItem-' + r.id + '">' +
+              '<div>' +
+                '<div class="inline-view"><span class="rule-name">' + escapeHtml(r.name) + '</span></div>' +
+                '<div class="inline-edit"><input value="' + escapeHtml(r.name) + '" data-field="name" style="width:100%;padding:4px 6px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px" /></div>' +
+                '<div class="rule-meta">匹配 <span class="matched">' + r.matchCount + '</span> 次 · ' + timeStr + '</div>' +
+              '</div>' +
+              '<div>' +
+                '<div class="inline-view"><span class="rule-pattern" title="' + escapeHtml(r.pattern) + '">' + escapeHtml(r.pattern) + '</span></div>' +
+                '<div class="inline-edit"><input value="' + escapeHtml(r.pattern) + '" data-field="pattern" style="width:100%;padding:4px 6px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px;font-family:monospace" /></div>' +
+              '</div>' +
+              '<div>' +
+                '<div class="inline-view"><span class="rule-reply" title="' + escapeHtml(r.reply) + '">' + escapeHtml(r.reply) + '</span></div>' +
+                '<div class="inline-edit"><input value="' + escapeHtml(r.reply) + '" data-field="reply" style="width:100%;padding:4px 6px;border:1px solid #d9d9d9;border-radius:4px;font-size:13px" /></div>' +
+              '</div>' +
+              '<div class="rule-actions">' +
+                '<label class="toggle-switch"><input type="checkbox" ' + (r.enabled ? 'checked' : '') + ' onchange="toggleRule(' + r.id + ', this.checked)" /><span class="toggle-slider"></span></label>' +
+                '<button class="btn btn-sm inline-view" onclick="startEdit(' + r.id + ')" style="background:#f5f5f5">编辑</button>' +
+                '<button class="btn btn-sm btn-primary inline-edit" onclick="saveEdit(' + r.id + ')">保存</button>' +
+                '<button class="btn btn-sm inline-edit" onclick="cancelEdit()" style="background:#f5f5f5">取消</button>' +
+                '<button class="btn btn-sm btn-danger" onclick="deleteRule(' + r.id + ')">删除</button>' +
+              '</div>' +
+              '</div>';
           }).join('');
         }
       } catch {}
     }
 
+    async function saveRule() {
+      const name = $('ruleName').value.trim();
+      const pattern = $('rulePattern').value.trim();
+      const reply = $('ruleReply').value.trim();
+      const enabled = $('ruleEnabled').checked;
+
+      if (!name || !pattern || !reply) {
+        alert('请填写规则名称、正则匹配和回复内容');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auto-reply/rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, pattern, reply, enabled })
+        });
+        const data = await res.json();
+        if (data.success) {
+          clearForm();
+          refreshRules();
+        } else {
+          alert(data.message || '添加失败');
+        }
+      } catch {}
+    }
+
+    function clearForm() {
+      $('ruleName').value = '';
+      $('rulePattern').value = '';
+      $('ruleReply').value = '';
+      $('ruleEnabled').checked = true;
+      $('ruleSaveBtn').textContent = '添加规则';
+      $('ruleSaveBtn').onclick = saveRule;
+      $('ruleCancelBtn').style.display = 'none';
+      editingRuleId = null;
+    }
+
+    function startEdit(id) {
+      editingRuleId = id;
+      const row = document.getElementById('ruleItem-' + id);
+      row.classList.add('editing');
+    }
+
+    function cancelEdit() {
+      clearForm();
+      if (editingRuleId) {
+        const row = document.getElementById('ruleItem-' + editingRuleId);
+        if (row) row.classList.remove('editing');
+        editingRuleId = null;
+      }
+    }
+
+    async function saveEdit(id) {
+      const row = document.getElementById('ruleItem-' + id);
+      const inputs = row.querySelectorAll('[data-field]');
+      const updates = {};
+      inputs.forEach(input => { updates[input.dataset.field] = input.value.trim(); });
+
+      try {
+        const res = await fetch('/api/auto-reply/rules/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        });
+        const data = await res.json();
+        if (data.success) {
+          row.classList.remove('editing');
+          editingRuleId = null;
+          refreshRules();
+        } else {
+          alert(data.message || '更新失败');
+        }
+      } catch {}
+    }
+
+    async function toggleRule(id, enabled) {
+      try {
+        await fetch('/api/auto-reply/rules/' + id + '/toggle', { method: 'POST' });
+        refreshRules();
+      } catch {}
+    }
+
+    async function deleteRule(id) {
+      if (!confirm('确定要删除该规则吗？')) return;
+      try {
+        await fetch('/api/auto-reply/rules/' + id, { method: 'DELETE' });
+        refreshRules();
+      } catch {}
+    }
+
+    connectWS();
     refreshAll();
+    refreshRules();
     setInterval(refreshAll, 3000);
+    setInterval(refreshRules, 5000);
   </script>
 </body>
 </html>

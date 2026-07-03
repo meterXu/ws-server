@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws'
+import { autoReplyRules } from '../controller/demoController.js'
 
 const MAX_MESSAGE_SIZE = 64 * 1024 // 64KB
 const MAX_CLIENTS = 1000
@@ -38,7 +39,25 @@ export default class WS {
         const msgStr = message.toString('utf-8')
         console.log(`[WS] 收到消息 来自#${id}: ${msgStr}`)
         this._addLog('receive', { clientId: id, ip, data: msgStr })
-        ws.send(JSON.stringify({ type: 'echo', message: `服务器回复: 我收到了你的消息 "${msgStr}"` }))
+
+        // 自动回复规则匹配
+        let matched = false
+        for (const rule of autoReplyRules) {
+          if (!rule.enabled) continue
+          try {
+            if (new RegExp(rule.pattern).test(msgStr)) {
+              rule.matchCount++
+              rule.lastMatch = new Date().toISOString()
+              this.sendToClient({ type: 'auto-reply', rule: rule.name, content: rule.reply })
+              console.log(`[AutoReply] 规则"${rule.name}"已匹配，自动回复已发送`)
+              matched = true
+            }
+          } catch (_) { /* 无效正则跳过 */ }
+        }
+
+        if (!matched) {
+          this.sendToClient({ type: 'ws-message', clientId: id, data: msgStr })
+        }
       })
 
       ws.on('close', () => {
