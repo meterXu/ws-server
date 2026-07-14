@@ -1,4 +1,4 @@
-FROM hub.xdog.icu/node:22-bullseye-slim
+FROM 172.16.150.3:8082/node:22-bullseye-slim
 
 
 RUN mkdir -p /ws-server

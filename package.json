@@ -13,11 +13,15 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.12.2",
+    "better-sqlite3": "^11.0.0",
     "koa": "^2.11.0",
     "koa-body": "^4.1.1",
     "koa-router": "^7.4.0",
     "koa-swagger-decorator": "^1.8.6",
     "koa2-cors": "^2.0.6",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
   }
 }

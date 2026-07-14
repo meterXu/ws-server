@@ -5,3 +5,4 @@ node_modules
 src/.DS_Store
 src/controller/.DS_Store
 src/.DS_Store
+data/

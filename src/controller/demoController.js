@@ -1,15 +1,19 @@
 import Router from 'koa-router'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
+import {
+  loadAutoReplyRules, insertAutoReplyRule, updateAutoReplyRule, deleteAutoReplyRule,
+  loadReportLogs, insertReportLog, trimReportLogs
+} from '../db/database.js'
 
 const demoRouter = new Router();
 const dataMap = new Map()
 let syncData = ""
 const MAX_REPORT_LOGS = 200
-const reportLogs = []
+const reportLogs = loadReportLogs()
 const MAX_AUTO_REPLY_RULES = 50
-export const autoReplyRules = []
-let _nextRuleId = 0
+export const autoReplyRules = loadAutoReplyRules()
+let _nextRuleId = autoReplyRules.length > 0 ? Math.max(...autoReplyRules.map(r => r.id)) : 0
 import path from "node:path"
 import fs from "node:fs"
 import os from "node:os"
@@ -35,6 +39,8 @@ demoRouter.post('/api/report', (ctx) => {
     }
     reportLogs.push(entry)
     if (reportLogs.length > MAX_REPORT_LOGS) reportLogs.shift()
+    insertReportLog(entry)
+    if (reportLogs.length >= MAX_REPORT_LOGS) trimReportLogs(MAX_REPORT_LOGS)
 
     // 自动回复规则匹配
     const bodyStr = typeof ctx.request.body === 'string'
@@ -47,8 +53,8 @@ demoRouter.post('/api/report', (ctx) => {
             if (new RegExp(rule.pattern).test(bodyStr)) {
                 rule.matchCount++
                 rule.lastMatch = new Date().toISOString()
-                const reply = { type: 'auto-reply', rule: rule.name, content: rule.reply }
-                global.webSocket.sendToClient(reply)
+                updateAutoReplyRule(rule.id, { matchCount: rule.matchCount, lastMatch: rule.lastMatch })
+                global.webSocket.sendToClient(rule.reply)
                 console.log(`[AutoReply] 规则"${rule.name}"已匹配，自动回复已发送`)
                 matched = true
             }
@@ -325,6 +331,7 @@ demoRouter.post('/api/auto-reply/rules', async (ctx) => {
         createdAt: new Date().toISOString()
     }
     autoReplyRules.push(rule)
+    insertAutoReplyRule(rule)
     ctx.body = { success: true, rule }
 })
 
@@ -346,6 +353,7 @@ demoRouter.put('/api/auto-reply/rules/:id', async (ctx) => {
     if (name !== undefined) rule.name = name
     if (reply !== undefined) rule.reply = reply
     if (enabled !== undefined) rule.enabled = enabled
+    updateAutoReplyRule(id, { name, pattern, reply, enabled })
     ctx.body = { success: true, rule }
 })
 
@@ -357,6 +365,7 @@ demoRouter.delete('/api/auto-reply/rules/:id', async (ctx) => {
         return
     }
     autoReplyRules.splice(idx, 1)
+    deleteAutoReplyRule(id)
     ctx.body = { success: true }
 })
 
@@ -368,6 +377,7 @@ demoRouter.post('/api/auto-reply/rules/:id/toggle', async (ctx) => {
         return
     }
     rule.enabled = !rule.enabled
+    updateAutoReplyRule(id, { enabled: rule.enabled })
     ctx.body = { success: true, rule }
 })
 

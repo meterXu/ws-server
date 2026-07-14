@@ -1,5 +1,11 @@
 import { WebSocketServer, WebSocket } from 'ws'
 import { autoReplyRules } from '../controller/demoController.js'
+import {
+  loadMessageLogs, insertMessageLog, trimMessageLogs,
+  loadTimerConfigs, insertTimerConfig, updateTimerSendCount, deleteTimerConfig,
+  loadStats, saveStats, getKV, setKV,
+  updateAutoReplyRule
+} from '../db/database.js'
 
 const MAX_MESSAGE_SIZE = 64 * 1024 // 64KB
 const MAX_CLIENTS = 1000
@@ -11,11 +17,26 @@ export default class WS {
   constructor () {
     this.ws = null
     this.clients = new Map() // id → {ws, ip, connectedAt}
-    this._totalBytesSent = 0
-    this._totalSendCount = 0
-    this._messageLogs = []
-    this.timers = new Map()
+
+    // 从 DB 恢复持久化数据
+    this._messageLogs = loadMessageLogs()
+    const stats = loadStats()
+    this._totalBytesSent = stats.totalBytesSent
+    this._totalSendCount = stats.totalSendCount
+
     this._nextTimerId = 0
+    this.timers = new Map()
+    this._loadTimers()
+  }
+
+  _loadTimers () {
+    const configs = loadTimerConfigs()
+    for (const cfg of configs) {
+      this.timers.set(cfg.id, cfg)
+    }
+    const maxLoaded = configs.length > 0 ? Math.max(...configs.map(c => c.id)) : 0
+    const storedNext = parseInt(getKV('_nextTimerId', '0'), 10)
+    this._nextTimerId = Math.max(maxLoaded, storedNext)
   }
 
   init (server) {
@@ -48,7 +69,8 @@ export default class WS {
             if (new RegExp(rule.pattern).test(msgStr)) {
               rule.matchCount++
               rule.lastMatch = new Date().toISOString()
-              this.sendToClient({ type: 'auto-reply', rule: rule.name, content: rule.reply })
+              updateAutoReplyRule(rule.id, { matchCount: rule.matchCount, lastMatch: rule.lastMatch })
+              this.sendToClient(rule.reply)
               console.log(`[AutoReply] 规则"${rule.name}"已匹配，自动回复已发送`)
               matched = true
             }
@@ -113,6 +135,8 @@ export default class WS {
     if (this._messageLogs.length > MAX_LOG_ENTRIES) {
       this._messageLogs.shift()
     }
+    insertMessageLog(entry)
+    if (this._messageLogs.length >= MAX_LOG_ENTRIES) trimMessageLogs(MAX_LOG_ENTRIES)
   }
 
   getLogs (limit = 50) {
@@ -141,6 +165,7 @@ export default class WS {
     if (this._totalSendCount % 100 === 0) {
       console.log(`[WS] 统计: 已发送 ${this._totalSendCount} 次, 累计 ${(this._totalBytesSent / 1024 / 1024).toFixed(2)} MB`)
     }
+    saveStats(this._totalBytesSent, this._totalSendCount)
   }
 
   sendToClientById (id, data) {
@@ -157,6 +182,7 @@ export default class WS {
     this._totalBytesSent += message.length
     this._totalSendCount++
     this._addLog('send', { clientId: id, ip: client.ip, data: data, bytes: message.length })
+    saveStats(this._totalBytesSent, this._totalSendCount)
     return true
   }
 
@@ -164,15 +190,18 @@ export default class WS {
 
   startTimer (message, intervalMs) {
     const id = ++this._nextTimerId
+    setKV('_nextTimerId', this._nextTimerId)
     const entry = { id, message, intervalMs, startAt: Date.now(), sendCount: 0, handle: null }
     entry.handle = setInterval(() => {
       const count = this.getClientCount()
       if (count > 0) {
         this.sendToClient(message)
         entry.sendCount++
+        updateTimerSendCount(id, entry.sendCount)
       }
     }, intervalMs)
     this.timers.set(id, entry)
+    insertTimerConfig(entry)
     return { id, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
   }
 
@@ -189,6 +218,7 @@ export default class WS {
     if (!entry) return true // 幂等：已不存在的任务视为删除成功
     if (entry.handle) clearInterval(entry.handle)
     this.timers.delete(id)
+    deleteTimerConfig(id)
     return true
   }
 
