@@ -9,11 +9,25 @@
 
 ## 一键安装
 ```bash
-docker run -d --name ws-server -p 3000:3000 meterxu/ws-server:latest
+docker volume create ws_data
+docker run -d --name ws-server -p 3000:3000 -v ws_data:/app/data meterxu/ws-server:latest
+```
+## docker-compose
+```bash
+services:
+  ws-server:
+    image: meterxu/ws-server:latest  # 你的镜像名
+    ports:
+      - "3000:3000"
+    volumes:
+      - ws_data:/app/data
+
+volumes:
+  ws_data:
 ```
 
 ## 系统界面
-![20260602081317.jpg](assets/20260602081317.jpg)
-![20260602081340.jpg](assets/20260602081340.jpg)
-![20260602081351.jpg](assets/20260602081351.jpg)
-![20260602081404.jpg](assets/20260602081404.jpg)
+![20260602081317.jpg](./assets/20260602081317.jpg)
+![20260602081340.jpg](./assets/20260602081340.jpg)
+![20260602081351.jpg](./assets/20260602081351.jpg)
+![20260602081404.jpg](./assets/20260602081404.jpg)

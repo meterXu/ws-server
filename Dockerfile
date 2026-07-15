@@ -10,7 +10,7 @@ COPY package.json /ws-server/package.json
 
 WORKDIR /ws-server
 
-
+VOLUME ["/ws-server/data"]
 EXPOSE 3000
 
 ENTRYPOINT ["npm","run","start"]
