@@ -450,6 +450,7 @@
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'welcome') return;
+          if (data.type !== 'ws-message') return; // 只保留客户端主动发送的数据
           wsMessages.push({ time: new Date().toISOString(), data });
           if (wsMessages.length > MAX_WS_MESSAGES) wsMessages.shift();
           renderTable();
