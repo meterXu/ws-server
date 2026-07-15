@@ -4,57 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>消息日志</title>
+  <link rel="stylesheet" href="/views/common.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5; color: #1a1a1a; min-height: 100vh;
-    }
-
-    .header {
-      background: #fff; border-bottom: 1px solid #e8e8e8;
-      padding: 0 24px; height: 56px; display: flex;
-      align-items: center; justify-content: space-between;
-    }
-    .header h1 { font-size: 18px; font-weight: 600; }
-    .nav a {
-      margin-left: 20px; text-decoration: none; font-size: 14px;
-      color: #1677ff; padding: 6px 14px; border-radius: 6px;
-      transition: background 0.2s;
-    }
-    .nav a:hover { background: #f0f5ff; }
-    .nav a.active { background: #e6f4ff; font-weight: 500; }
-
-    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-
-    .stat-card {
-      background: #fff; border-radius: 10px; padding: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 6px; }
-    .stat-card .value { font-size: 28px; font-weight: 700; }
-    .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
-    .stat-card.green .value { color: #22c55e; }
-    .stat-card.blue .value { color: #1677ff; }
-    .stat-card.orange .value { color: #f59e0b; }
-
-    .panel {
-      background: #fff; border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-      overflow: hidden;
-    }
-    .panel-header {
-      padding: 14px 20px; font-size: 14px; font-weight: 600;
-      border-bottom: 1px solid #f0f0f0; display: flex;
-      align-items: center; justify-content: space-between;
-    }
-    .panel-header .badge {
-      font-size: 12px; font-weight: 400; color: #999;
-      background: #fafafa; padding: 2px 10px; border-radius: 10px;
-    }
-
     .table-wrap { max-height: 500px; overflow-y: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th {
@@ -98,9 +50,6 @@
     .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; transition: background 0.3s; }
     .ws-dot.on { background: #22c55e; }
 
-    .empty {
-      text-align: center; padding: 60px 20px; color: #bbb; font-size: 14px;
-    }
     .empty .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
 
     .rule-form {
@@ -211,23 +160,12 @@
     .rule-item.editing .inline-edit textarea { display: block; }
 
     @media (max-width: 768px) {
-      .grid-3 { grid-template-columns: repeat(2, 1fr); }
       .rule-form { grid-template-columns: 1fr 1fr; }
       .rule-item { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>消息日志</h1>
-    <div class="nav">
-      <a href="/">首页</a>
-      <a href="/admin">推送</a>
-      <a href="/timer">广播</a>
-      <a href="/reports" class="active">日志</a>
-    </div>
-  </div>
-
   <div class="main">
     <div class="grid-3">
       <div class="stat-card green">
@@ -311,11 +249,12 @@
     </div>
   </div>
 
+  <script src="/views/common.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
   <script>
-    function $(id) { return document.getElementById(id); }
+    renderHeader('消息日志', '/reports');
 
     function timePart(iso) {
       const d = new Date(iso);
@@ -450,7 +389,7 @@
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'welcome') return;
-          if (data.type !== 'ws-message') return; // 只保留客户端主动发送的数据
+          if (data.type !== 'ws-message') return;
           wsMessages.push({ time: new Date().toISOString(), data });
           if (wsMessages.length > MAX_WS_MESSAGES) wsMessages.shift();
           renderTable();
@@ -595,7 +534,7 @@
     let editingRuleId = null;
 
     async function refreshRules() {
-      if (editingRuleId) return; // 正在编辑时暂停刷新，防止强制关闭编辑态
+      if (editingRuleId) return;
       try {
         const res = await fetch('/api/auto-reply/rules');
         const data = await res.json();
@@ -625,9 +564,7 @@
               '</div>' +
               '<div class="rule-actions">' +
                 '<label class="toggle-switch"><input type="checkbox" ' + (r.enabled ? 'checked' : '') + ' onchange="toggleRule(' + r.id + ', this.checked)" /><span class="toggle-slider"></span></label>' +
-                '<button class="btn btn-sm inline-view" onclick="startEdit(' + r.id + ')" style="background:#f5f5f5">编辑</button>' +
-                '<button class="btn btn-sm btn-primary inline-edit" onclick="saveEdit(' + r.id + ')">保存</button>' +
-                '<button class="btn btn-sm inline-edit" onclick="cancelEdit()" style="background:#f5f5f5">取消</button>' +
+                '<button class="btn btn-sm" id="editBtn-' + r.id + '" onclick="startEdit(' + r.id + ')" style="background:#f5f5f5">编辑</button>' +
                 '<button class="btn btn-sm btn-danger" onclick="deleteRule(' + r.id + ')">删除</button>' +
               '</div>' +
               '</div>';
@@ -679,11 +616,27 @@
         destroyInlineRuleEditors(editingRuleId);
         const prevRow = $('ruleItem-' + editingRuleId);
         if (prevRow) prevRow.classList.remove('editing');
+        resetEditBtn(editingRuleId);
       }
       editingRuleId = id;
       const row = document.getElementById('ruleItem-' + id);
       row.classList.add('editing');
       initInlineRuleEditors(id);
+      // 按钮切换为「更新」
+      const btn = $('editBtn-' + id);
+      btn.textContent = '更新';
+      btn.style.background = '#1677ff';
+      btn.style.color = '#fff';
+      btn.onclick = function() { saveEdit(id); };
+    }
+
+    function resetEditBtn(id) {
+      const btn = $('editBtn-' + id);
+      if (!btn) return;
+      btn.textContent = '编辑';
+      btn.style.background = '#f5f5f5';
+      btn.style.color = '';
+      btn.onclick = function() { startEdit(id); };
     }
 
     function cancelEdit() {
@@ -692,6 +645,7 @@
         destroyInlineRuleEditors(editingRuleId);
         const row = document.getElementById('ruleItem-' + editingRuleId);
         if (row) row.classList.remove('editing');
+        resetEditBtn(editingRuleId);
         editingRuleId = null;
       }
     }
@@ -719,6 +673,7 @@
         if (data.success) {
           destroyInlineRuleEditors(id);
           row.classList.remove('editing');
+          resetEditBtn(id);
           editingRuleId = null;
           refreshRules();
         } else {

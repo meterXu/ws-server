@@ -21,6 +21,22 @@ import os from "node:os"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+// 静态资源：views 目录下的 CSS/JS 文件
+demoRouter.get('/views/:file', async (ctx) => {
+    const filePath = path.join(__dirname, '..', 'views', ctx.params.file)
+    if (!fs.existsSync(filePath)) {
+        ctx.status = 404
+        return
+    }
+    const ext = path.extname(ctx.params.file).toLowerCase()
+    const mimeTypes = {
+        '.css': 'text/css; charset=utf-8',
+        '.js':  'application/javascript; charset=utf-8'
+    }
+    if (mimeTypes[ext]) ctx.type = mimeTypes[ext]
+    ctx.body = fs.readFileSync(filePath, 'utf-8')
+})
+
 demoRouter.get('/api', async (ctx) => {
     ctx.body = {
         success: true,

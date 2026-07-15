@@ -4,59 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>定时广播</title>
+  <link rel="stylesheet" href="/views/common.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f2f5; color: #1a1a1a; min-height: 100vh;
-    }
-
-    .header {
-      background: #fff; border-bottom: 1px solid #e8e8e8;
-      padding: 0 24px; height: 56px; display: flex;
-      align-items: center; justify-content: space-between;
-    }
-    .header h1 { font-size: 18px; font-weight: 600; }
-    .nav a {
-      margin-left: 20px; text-decoration: none; font-size: 14px;
-      color: #1677ff; padding: 6px 14px; border-radius: 6px;
-      transition: background 0.2s;
-    }
-    .nav a:hover { background: #f0f5ff; }
-    .nav a.active { background: #e6f4ff; font-weight: 500; }
-
-    .main { max-width: 1200px; margin: 0 auto; padding: 24px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-
-    .stat-card {
-      background: #fff; border-radius: 10px; padding: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
-    .stat-card .label { font-size: 13px; color: #999; margin-bottom: 6px; }
-    .stat-card .value { font-size: 28px; font-weight: 700; }
-    .stat-card .sub { font-size: 12px; color: #999; margin-top: 4px; }
-    .stat-card.green .value { color: #22c55e; }
-    .stat-card.blue .value { color: #1677ff; }
-    .stat-card.orange .value { color: #f59e0b; }
-
     .dot-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
     .dot.active { background: #22c55e; }
     .dot.pulse { animation: pulse 1s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    .panel {
-      background: #fff; border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-    .panel-header {
-      padding: 14px 20px; font-size: 14px; font-weight: 600;
-      border-bottom: 1px solid #f0f0f0;
-      display: flex; align-items: center; justify-content: space-between;
-    }
     .panel-header .hint { font-size: 12px; color: #999; font-weight: 400; }
     .panel-body { padding: 20px; }
 
@@ -120,7 +76,7 @@
     }
 
     .timer-card {
-      min-width: 0; /* 防止长内容撑大列宽、挤压相邻卡片 */
+      min-width: 0;
       border: 1px solid #f0f0f0; border-radius: 10px;
       padding: 16px; background: #fafafa;
       transition: box-shadow 0.2s, border-color 0.2s;
@@ -146,7 +102,7 @@
       flex-wrap: wrap;
     }
     .timer-card .tc-meta span { white-space: nowrap; }
-    .timer-card .tc-actions { display: flex; gap: 8px; }
+    .timer-card .tc-actions { display: flex; gap: 8px; align-items: center; }
 
     .badge {
       display: inline-block; padding: 2px 10px; border-radius: 12px;
@@ -165,26 +121,45 @@
     .btn-sm-stop:hover { background: #dc2626; }
     .btn-sm-del { background: #fff; color: #999; border: 1px solid #d9d9d9; }
     .btn-sm-del:hover { background: #fff2f0; color: #ef4444; border-color: #ffccc7; }
+    .btn-sm-format { background: #fff; color: #1677ff; border: 1px solid #1677ff; }
+    .btn-sm-format:hover { background: #f0f5ff; }
+    .btn-sm-save { background: #1677ff; color: #fff; }
+    .btn-sm-save:hover { background: #0958d9; }
 
-	    .btn-sm-format { background: #fff; color: #1677ff; border: 1px solid #1677ff; }
-	    .btn-sm-format:hover { background: #f0f5ff; }
-	    .btn-sm-save { background: #1677ff; color: #fff; }
-	    .btn-sm-save:hover { background: #0958d9; }
+    .tc-edit-area { margin-bottom: 10px; }
+    .tc-edit-area label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
+    .tc-edit-cm { border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; }
+    .tc-edit-cm .CodeMirror {
+      height: auto; min-height: 70px; font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace; border-radius: 6px;
+    }
+    .tc-edit-cm .CodeMirror-scroll { min-height: 70px; }
+    .tc-edit-cm.focused { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+    .tc-edit-interval {
+      width: 120px; padding: 6px 10px; border: 1px solid #d9d9d9;
+      border-radius: 6px; font-size: 13px; transition: border-color 0.2s;
+    }
+    .tc-edit-interval:focus { outline: none; border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
 
-	    .tc-edit-area { margin-bottom: 10px; }
-	    .tc-edit-area label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; }
-	    .tc-edit-cm { border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; }
-	    .tc-edit-cm .CodeMirror {
-	      height: auto; min-height: 70px; font-size: 12px;
-	      font-family: 'SF Mono', 'Fira Code', monospace; border-radius: 6px;
-	    }
-	    .tc-edit-cm .CodeMirror-scroll { min-height: 70px; }
-	    .tc-edit-cm.focused { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
-	    .tc-edit-interval {
-	      width: 120px; padding: 6px 10px; border: 1px solid #d9d9d9;
-	      border-radius: 6px; font-size: 13px; transition: border-color 0.2s;
-	    }
-	    .tc-edit-interval:focus { outline: none; border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+    /* Toggle switch */
+    .toggle-switch {
+      position: relative; display: inline-block; width: 36px; height: 20px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background: #ccc; border-radius: 20px; transition: 0.3s;
+    }
+    .toggle-slider:before {
+      content: ""; position: absolute; height: 14px; width: 14px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    .tc-edit-area { display: none; }
+    .timer-card.editing .tc-edit-area { display: block; }
+    .timer-card.editing .tc-msg { display: none; }
 
     /* Log */
     .log-feed {
@@ -203,21 +178,10 @@
 
     @media (max-width: 768px) {
       .timer-grid { grid-template-columns: 1fr; }
-      .grid-4 { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>定时循环广播</h1>
-    <div class="nav">
-      <a href="/">首页</a>
-      <a href="/admin">推送</a>
-      <a href="/timer" class="active">广播</a>
-      <a href="/reports">日志</a>
-    </div>
-  </div>
-
   <div class="main">
     <div class="grid-4">
       <div class="stat-card green">
@@ -289,17 +253,18 @@
     </div>
   </div>
 
+  <script src="/views/common.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
   <script>
+    renderHeader('定时循环广播', '/timer');
+
     let pollTimer = null;
     let prevTimers = [];
-    let pendingOps = new Set(); // 防止重复操作
+    let pendingOps = new Set();
     let mainEditor = null;
-    let timerEditors = new Map(); // id -> { editor, wrapper }
-
-    function $(id) { return document.getElementById(id); }
+    let timerEditors = new Map();
 
     function formatEditor(cm) {
       const raw = cm.getValue().trim();
@@ -309,13 +274,12 @@
         if (formatted !== raw) {
           const cursor = cm.getCursor();
           cm.setValue(formatted);
-          // Restore cursor position as close as possible
           const newLastLine = cm.lastLine();
           const targetLine = Math.min(cursor.line, newLastLine);
           cm.setCursor({ line: targetLine, ch: Math.min(cursor.ch, cm.getLine(targetLine).length) });
         }
       } catch {
-        // Not valid JSON yet — leave as-is so the user can keep typing
+        // Not valid JSON yet — leave as-is
       }
     }
 
@@ -339,7 +303,6 @@
       for (const [id, { editor, wrapper }] of timerEditors) {
         const parent = wrapper.parentElement;
         if (parent) {
-          // Restore the textarea from CodeMirror before removing the wrapper
           const ta = wrapper.querySelector('textarea');
           if (ta) {
             ta.value = editor.getValue();
@@ -355,7 +318,6 @@
         const id = ta.getAttribute('data-id');
         if (!id || timerEditors.has(id)) return;
 
-        // Wrap textarea in a container for border/focus styling
         const wrapper = document.createElement('div');
         wrapper.className = 'tc-edit-cm';
         ta.parentElement.insertBefore(wrapper, ta);
@@ -577,33 +539,15 @@
 
       container.innerHTML = timers.map(t => {
         const active = t.active;
-        if (active) {
-          return `
-            <div class="timer-card active" data-timer-id="${t.id}">
-              <div class="tc-header">
-                <span class="tc-id">定时器 #${t.id}</span>
-                <span class="badge badge-running">运行中</span>
-              </div>
-              <div class="tc-msg" title="${escAttr(JSON.stringify(t.message))}">${escHtml(JSON.stringify(t.message))}</div>
-              <div class="tc-meta">
-                <span>间隔: ${t.intervalMs / 1000}s</span>
-                <span class="tc-send-count">已发送: ${t.sendCount} 次</span>
-                <span class="tc-elapsed">已运行: ${elapsed(t.startAt)}</span>
-              </div>
-              <div class="tc-actions">
-                <button class="btn-sm btn-sm-stop" onclick="stopTimer(${t.id})">停止</button>
-                <button class="btn-sm btn-sm-del" onclick="removeTimer(${t.id})">删除</button>
-              </div>
-            </div>`;
-        }
         const editRaw = t._editRaw !== undefined ? t._editRaw : JSON.stringify(t.message, null, 2);
         const editInterval = t._editInterval !== undefined ? t._editInterval : (t.intervalMs / 1000);
         return `
-          <div class="timer-card stopped" data-timer-id="${t.id}">
+          <div class="timer-card ${active ? 'active' : 'stopped'}" data-timer-id="${t.id}">
             <div class="tc-header">
               <span class="tc-id">定时器 #${t.id}</span>
-              <span class="badge badge-stopped">已停止</span>
+              <span class="badge ${active ? 'badge-running' : 'badge-stopped'}">${active ? '运行中' : '已停止'}</span>
             </div>
+            <div class="tc-msg" title="${escAttr(JSON.stringify(t.message))}">${escHtml(JSON.stringify(t.message))}</div>
             <div class="tc-edit-area">
               <label>消息内容（JSON）</label>
               <textarea class="tc-edit-msg" data-id="${t.id}">${escHtml(editRaw)}</textarea>
@@ -613,18 +557,93 @@
               <input type="number" class="tc-edit-interval" data-id="${t.id}" value="${editInterval}" min="1" max="3600">
             </div>
             <div class="tc-meta">
+              <span>间隔: ${t.intervalMs / 1000}s</span>
               <span class="tc-send-count">已发送: ${t.sendCount} 次</span>
+              ${active ? '<span class="tc-elapsed">已运行: ' + elapsed(t.startAt) + '</span>' : ''}
             </div>
             <div class="tc-actions">
-              <button class="btn-sm btn-sm-format" onclick="formatTimerEditor(${t.id})">格式化</button>
-              <button class="btn-sm btn-sm-save" onclick="saveAndRestartTimer(${t.id})">保存并重启</button>
+              <label class="toggle-switch"><input type="checkbox" ${active ? 'checked' : ''} onchange="toggleTimer(${t.id}, this.checked)" /><span class="toggle-slider"></span></label>
+              <button class="btn-sm" id="editBtn-${t.id}" onclick="startEditTimer(${t.id})" style="background:#f5f5f5">编辑</button>
               <button class="btn-sm btn-sm-del" onclick="removeTimer(${t.id})">删除</button>
             </div>
           </div>`;
       }).join('');
 
-      // Activate CodeMirror on newly rendered textareas
       initTimerEditors();
+    }
+
+    async function toggleTimer(id, active) {
+      if (active) {
+        await restartTimer(id);
+      } else {
+        await stopTimer(id);
+      }
+    }
+
+    function startEditTimer(id) {
+      const card = document.querySelector('.timer-card[data-timer-id="' + id + '"]');
+      if (!card) return;
+      card.classList.add('editing');
+      initTimerEditors();
+      requestAnimationFrame(() => {
+        const entry = timerEditors.get(String(id));
+        if (entry) entry.editor.refresh();
+      });
+      const btn = $('editBtn-' + id);
+      btn.textContent = '更新';
+      btn.style.background = '#1677ff';
+      btn.style.color = '#fff';
+      btn.onclick = function() { updateTimer(id); };
+    }
+
+    async function updateTimer(id) {
+      const entry = timerEditors.get(String(id));
+      const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + id + '"]');
+      const raw = entry ? entry.editor.getValue().trim()
+        : (document.querySelector('.tc-edit-msg[data-id="' + id + '"]') || {}).value;
+      if (!raw) { showResult('error', '消息内容不能为空'); return; }
+      let payload;
+      try { payload = JSON.parse(raw); } catch {
+        showResult('error', 'JSON 格式无效'); return;
+      }
+      const interval = parseInt(intervalEl ? intervalEl.value : 0, 10);
+      if (!interval || interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
+
+      try {
+        const [startRes] = await Promise.all([
+          fetch('/api/timer/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: payload, interval })
+          }).then(r => r.json()),
+          fetch('/api/timer/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+          }).then(r => r.json())
+        ]);
+        if (startRes.success) {
+          showResult('success', '定时器已更新');
+          destroyTimerEditors();
+          const card = document.querySelector('.timer-card[data-timer-id="' + id + '"]');
+          if (card) card.classList.remove('editing');
+          resetEditBtn(id);
+          await refreshStatus();
+        } else {
+          showResult('error', startRes.message);
+        }
+      } catch (err) {
+        showResult('error', '请求失败: ' + err.message);
+      }
+    }
+
+    function resetEditBtn(id) {
+      const btn = $('editBtn-' + id);
+      if (!btn) return;
+      btn.textContent = '编辑';
+      btn.style.background = '#f5f5f5';
+      btn.style.color = '';
+      btn.onclick = function() { startEditTimer(id); };
     }
 
     function sameStructure(oldList, newList) {
@@ -643,20 +662,12 @@
       for (const t of timers) {
         if (!t.active) continue;
         const card = container.querySelector('.timer-card[data-timer-id="' + t.id + '"]');
-        if (!card) continue; // DOM mismatch, fall back to full render next poll
+        if (!card) continue;
         const sendEl = card.querySelector('.tc-send-count');
         if (sendEl) sendEl.textContent = '已发送: ' + t.sendCount + ' 次';
         const elapsedEl = card.querySelector('.tc-elapsed');
         if (elapsedEl) elapsedEl.textContent = '已运行: ' + elapsed(t.startAt);
       }
-    }
-
-    function escHtml(s) {
-      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    function escAttr(s) {
-      return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function addLogEntry(timerId, count, clientCount) {
@@ -684,7 +695,6 @@
         $('clientDot').className = 'dot' + (cs.clientCount > 0 ? ' active' : '');
 
         if (ts.success && ts.timers) {
-          // Detect new broadcasts
           for (const t of ts.timers) {
             const prev = prevTimers.find(p => p.id === t.id);
             if (prev && t.sendCount > prev.sendCount && t.active) {
@@ -692,12 +702,11 @@
             }
           }
           if (sameStructure(prevTimers, ts.timers)) {
-            // Structure unchanged: only update dynamic numbers, don't touch DOM
             updateDynamicFields(ts.timers);
           } else {
-            // Structure changed: preserve in-progress edits, then full re-render
             for (const t of ts.timers) {
-              if (!t.active) {
+              const card = document.querySelector('.timer-card[data-timer-id="' + t.id + '"]');
+              if (card && card.classList.contains('editing')) {
                 const entry = timerEditors.get(String(t.id));
                 const intervalEl = document.querySelector('.tc-edit-interval[data-id="' + t.id + '"]');
                 if (entry) t._editRaw = entry.editor.getValue();
