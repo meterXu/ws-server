@@ -28,17 +28,18 @@
   // group collapse state
   let collapsedGroups = {};
 
-  // grouped timers derived from flat list
-  let groupedTimers = $derived(
-    Object.entries(
-      timers.reduce((acc, t) => {
-        const g = t.group || '默认分组';
-        if (!acc[g]) acc[g] = [];
-        acc[g].push(t);
-        return acc;
-      }, {})
-    ).sort(([a], [b]) => a.localeCompare(b))
-  );
+  // grouped timers computed imperatively (not $derived to avoid reactivity issues)
+  let groupedTimers = [];
+
+  function regroup() {
+    const map = {};
+    for (const t of timers) {
+      const g = t.group || '默认分组';
+      if (!map[g]) map[g] = [];
+      map[g].push(t);
+    }
+    groupedTimers = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }
 
   function showResult(type, msg) {
     resultType = type; resultMsg = msg;
@@ -169,7 +170,7 @@
           const prev = prevTimers.find(p => p.id === t.id);
           if (prev && t.sendCount > prev.sendCount && t.active) addLogEntry(t.name || '定时器' + t.id, t.sendCount, cs.clientCount);
         }
-        if (!sameStructure(prevTimers, ts.timers)) timers = ts.timers;
+        if (!sameStructure(prevTimers, ts.timers)) { timers = ts.timers; regroup(); }
         prevTimers = ts.timers;
       }
       activeCount = prevTimers.filter(t => t.active).length;
