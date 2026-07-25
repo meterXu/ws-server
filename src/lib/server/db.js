@@ -45,6 +45,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS timer_configs (
     id           INTEGER PRIMARY KEY,
     name         TEXT    NOT NULL DEFAULT '',
+    group_name   TEXT    NOT NULL DEFAULT '',
     message      TEXT    NOT NULL,
     interval_ms  INTEGER NOT NULL,
     start_at     INTEGER NOT NULL,
@@ -68,6 +69,8 @@ if (isNewDb) {
 
 // 兼容旧表：为已存在的 timer_configs 添加 name 列
 try { db.exec('ALTER TABLE timer_configs ADD COLUMN name TEXT NOT NULL DEFAULT \'\'') } catch (_) { /* 列已存在 */ }
+// 兼容旧表：为已存在的 timer_configs 添加 group_name 列
+try { db.exec('ALTER TABLE timer_configs ADD COLUMN group_name TEXT NOT NULL DEFAULT \'\'') } catch (_) { /* 列已存在 */ }
 
 // ---- auto-reply rules ----
 
@@ -184,6 +187,7 @@ export function loadTimerConfigs() {
   return db.prepare('SELECT * FROM timer_configs ORDER BY id ASC').all().map(row => ({
     id: row.id,
     name: row.name || '',
+    group: row.group_name || '',
     message: safeParse(row.message),
     intervalMs: row.interval_ms,
     startAt: row.start_at,
@@ -194,11 +198,12 @@ export function loadTimerConfigs() {
 
 export function insertTimerConfig(entry) {
   db.prepare(`
-    INSERT INTO timer_configs (id, name, message, interval_ms, start_at, send_count)
-    VALUES (@id, @name, @message, @intervalMs, @startAt, @sendCount)
+    INSERT INTO timer_configs (id, name, group_name, message, interval_ms, start_at, send_count)
+    VALUES (@id, @name, @groupName, @message, @intervalMs, @startAt, @sendCount)
   `).run({
     id: entry.id,
     name: entry.name || '',
+    groupName: entry.group || '',
     message: JSON.stringify(entry.message),
     intervalMs: entry.intervalMs,
     startAt: entry.startAt,

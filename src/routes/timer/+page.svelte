@@ -20,9 +20,25 @@
   let editorValue = '{\n  "type": "timer",\n  "message": "定时广播消息"\n}';
   let intervalValue = 2;
   let nameValue = '';
+  let groupValue = '';
 
   // per-timer edit state
   let editingTimers = {};
+
+  // group collapse state
+  let collapsedGroups = {};
+
+  // grouped timers derived from flat list
+  let groupedTimers = $derived(
+    Object.entries(
+      timers.reduce((acc, t) => {
+        const g = t.group || '默认分组';
+        if (!acc[g]) acc[g] = [];
+        acc[g].push(t);
+        return acc;
+      }, {})
+    ).sort(([a], [b]) => a.localeCompare(b))
+  );
 
   function showResult(type, msg) {
     resultType = type; resultMsg = msg;
@@ -48,7 +64,7 @@
     try {
       const res = await fetch('/api/timer/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: nameValue, message: payload, interval: intervalValue })
+        body: JSON.stringify({ name: nameValue, message: payload, interval: intervalValue, group: groupValue })
       });
       const data = await res.json();
       data.success ? (showResult('success', '「' + (nameValue || data.timer.name) + '」已启动'), refreshStatus())
@@ -73,7 +89,7 @@
     if (!timer) return; lock(key);
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: timer.name, message: timer.message, interval: Math.round(timer.intervalMs / 1000), startAt: timer.startAt }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: timer.name, message: timer.message, interval: Math.round(timer.intervalMs / 1000), startAt: timer.startAt, group: timer.group }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       startRes.success ? (showResult('success', '定时器已重启'), refreshStatus()) : showResult('error', startRes.message);
@@ -96,6 +112,7 @@
     if (!timer) return;
     editingTimers[id] = {
       name: timer.name || '',
+      group: timer.group || '',
       msg: JSON.stringify(timer.message, null, 2),
       interval: Math.round(timer.intervalMs / 1000)
     };
@@ -117,7 +134,7 @@
     if (!edit.interval || edit.interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: edit.name, message: payload, interval: edit.interval, startAt: (prevTimers.find(t => t.id === id) || {}).startAt }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: edit.name, message: payload, interval: edit.interval, startAt: (prevTimers.find(t => t.id === id) || {}).startAt, group: edit.group }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       if (startRes.success) {
@@ -188,6 +205,15 @@
       <input type="text" bind:value={nameValue} placeholder="例如: 每日推送" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
     </div>
     <div class="mb-4">
+      <span class="block text-xs text-gray-500 mb-2">分组（可选）</span>
+      <input type="text" bind:value={groupValue} placeholder="留空则归入「默认分组」" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" list="group-suggestions" />
+      <datalist id="group-suggestions">
+        {#each [...new Set(prevTimers.map(t => t.group).filter(Boolean))] as g}
+          <option value={g} />
+        {/each}
+      </datalist>
+    </div>
+    <div class="mb-4">
       <span class="block text-xs text-gray-500 mb-2">消息内容（JSON）</span>
       <JsonEditor bind:this={editorComponent} value={editorValue} onChange={v => editorValue = v} height="100px" />
     </div>
@@ -212,49 +238,75 @@
   {#if timers.length === 0}
     <Empty message="暂无定时广播任务，请添加一个" />
   {:else}
-    <div class="p-5">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {#each timers as t}
-          {@const editing = editingTimers[t.id] !== undefined}
-          {@const edit = editingTimers[t.id]}
-          <div class="border rounded-xl p-4 transition-shadow hover:shadow-sm {t.active ? 'border-l-[3px] border-l-green-500 bg-green-50/30' : 'border-l-[3px] border-l-gray-300 bg-gray-50/50'}">
-            <div class="flex items-center justify-between mb-2.5">
-              <span class="font-semibold text-sm">{t.name || '定时器' + t.id}</span>
-              <Badge text={t.active ? '运行中' : '已停止'} variant={t.active ? 'success' : 'default'} />
-            </div>
-            {#if editing}
-              <div class="mb-2">
-                <span class="text-xs text-gray-500 block mb-1">名称</span>
-                <input type="text" bind:value={edit.name} placeholder="例如: 每日推送" required class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
+    <div class="p-5 space-y-4">
+      {#each groupedTimers as [groupName, groupTimers]}
+        {@const collapsed = collapsedGroups[groupName] === true}
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+          <button
+            onclick={() => { collapsedGroups[groupName] = !collapsed; collapsedGroups = collapsedGroups; }}
+            class="w-full flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+          >
+            <span class="text-xs text-gray-400 transition-transform {collapsed ? '' : 'rotate-90'}">▶</span>
+            <span class="text-sm font-semibold text-gray-700">{groupName}</span>
+            <span class="text-xs text-gray-400 ml-auto">{groupTimers.filter(t => t.active).length}/{groupTimers.length} 活跃</span>
+          </button>
+          {#if !collapsed}
+            <div class="p-3">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {#each groupTimers as t}
+                  {@const editing = editingTimers[t.id] !== undefined}
+                  {@const edit = editingTimers[t.id]}
+                  <div class="border rounded-xl p-4 transition-shadow hover:shadow-sm {t.active ? 'border-l-[3px] border-l-green-500 bg-green-50/30' : 'border-l-[3px] border-l-gray-300 bg-gray-50/50'}">
+                    <div class="flex items-center justify-between mb-2.5">
+                      <span class="font-semibold text-sm">{t.name || '定时器' + t.id}</span>
+                      <Badge text={t.active ? '运行中' : '已停止'} variant={t.active ? 'success' : 'default'} />
+                    </div>
+                    {#if editing}
+                      <div class="mb-2">
+                        <span class="text-xs text-gray-500 block mb-1">名称</span>
+                        <input type="text" bind:value={edit.name} placeholder="例如: 每日推送" required class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
+                      </div>
+                      <div class="mb-2">
+                        <span class="text-xs text-gray-500 block mb-1">分组</span>
+                        <input type="text" bind:value={edit.group} placeholder="留空则归入「默认分组」" class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" list={'group-edit-' + t.id} />
+                        <datalist id={'group-edit-' + t.id}>
+                          {#each [...new Set(prevTimers.map(t => t.group).filter(Boolean))] as g}
+                            <option value={g} />
+                          {/each}
+                        </datalist>
+                      </div>
+                      <div class="mb-2">
+                        <span class="text-xs text-gray-500 block mb-1">消息内容（JSON）</span>
+                        <textarea bind:value={edit.msg} class="w-full h-20 p-2 border border-gray-200 rounded-md text-xs font-mono resize-y focus:outline-none focus:border-purple-400"></textarea>
+                      </div>
+                      <div class="mb-2">
+                        <span class="text-xs text-gray-500 block mb-1">发送间隔（秒）</span>
+                        <input type="number" bind:value={edit.interval} min="1" max="3600" class="w-28 px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
+                      </div>
+                    {:else}
+                      <div class="text-xs font-mono bg-gray-100 px-3 py-2 rounded-md text-gray-500 truncate mb-2.5" title={JSON.stringify(t.message)}>{JSON.stringify(t.message)}</div>
+                    {/if}
+                    <div class="flex gap-4 text-xs text-gray-400 mb-3 flex-wrap">
+                      <span>间隔: {t.intervalMs / 1000}s</span><span>已发送: {t.sendCount} 次</span>
+                      {#if t.active}<span>已运行: {elapsed(t.startAt)}</span>{/if}
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <Toggle checked={t.active} onChanged={v => toggleTimer(t.id, v)} />
+                      {#if editing}
+                        <button onclick={() => updateTimer(t.id)} class="px-3 py-1.5 bg-purple-600 text-white rounded-md text-xs font-medium hover:bg-purple-700 transition-colors">更新</button>
+                        <button onclick={() => cancelEdit(t.id)} class="px-3 py-1.5 bg-white text-gray-400 border border-gray-200 rounded-md text-xs hover:bg-gray-50 transition-colors">取消</button>
+                      {:else}
+                        <button onclick={() => startEdit(t.id)} class="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-300 transition-colors">编辑</button>
+                      {/if}
+                      <button onclick={() => removeTimer(t.id)} class="px-3 py-1.5 bg-white text-red-400 border border-red-200 rounded-md text-xs hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">删除</button>
+                    </div>
+                  </div>
+                {/each}
               </div>
-              <div class="mb-2">
-                <span class="text-xs text-gray-500 block mb-1">消息内容（JSON）</span>
-                <textarea bind:value={edit.msg} class="w-full h-20 p-2 border border-gray-200 rounded-md text-xs font-mono resize-y focus:outline-none focus:border-purple-400"></textarea>
-              </div>
-              <div class="mb-2">
-                <span class="text-xs text-gray-500 block mb-1">发送间隔（秒）</span>
-                <input type="number" bind:value={edit.interval} min="1" max="3600" class="w-28 px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
-              </div>
-            {:else}
-              <div class="text-xs font-mono bg-gray-100 px-3 py-2 rounded-md text-gray-500 truncate mb-2.5" title={JSON.stringify(t.message)}>{JSON.stringify(t.message)}</div>
-            {/if}
-            <div class="flex gap-4 text-xs text-gray-400 mb-3 flex-wrap">
-              <span>间隔: {t.intervalMs / 1000}s</span><span>已发送: {t.sendCount} 次</span>
-              {#if t.active}<span>已运行: {elapsed(t.startAt)}</span>{/if}
             </div>
-            <div class="flex items-center gap-2">
-              <Toggle checked={t.active} onChanged={v => toggleTimer(t.id, v)} />
-              {#if editing}
-                <button onclick={() => updateTimer(t.id)} class="px-3 py-1.5 bg-purple-600 text-white rounded-md text-xs font-medium hover:bg-purple-700 transition-colors">更新</button>
-                <button onclick={() => cancelEdit(t.id)} class="px-3 py-1.5 bg-white text-gray-400 border border-gray-200 rounded-md text-xs hover:bg-gray-50 transition-colors">取消</button>
-              {:else}
-                <button onclick={() => startEdit(t.id)} class="px-3 py-1.5 bg-gray-200 text-gray-600 rounded-md text-xs font-medium hover:bg-gray-300 transition-colors">编辑</button>
-              {/if}
-              <button onclick={() => removeTimer(t.id)} class="px-3 py-1.5 bg-white text-red-400 border border-red-200 rounded-md text-xs hover:bg-red-50 hover:text-red-500 transition-colors ml-auto">删除</button>
-            </div>
-          </div>
-        {/each}
-      </div>
+          {/if}
+        </div>
+      {/each}
     </div>
   {/if}
 </Panel>

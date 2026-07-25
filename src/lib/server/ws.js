@@ -239,9 +239,9 @@ export class WS {
     return id
   }
 
-  startTimer (name, message, intervalMs, startAt) {
+  startTimer (name, message, intervalMs, startAt, group) {
     const id = this._nextAvailableTimerId()
-    const entry = { id, name: name || '', message, intervalMs, startAt: startAt || Date.now(), sendCount: 0, handle: null }
+    const entry = { id, name: name || '', group: group || '', message, intervalMs, startAt: startAt || Date.now(), sendCount: 0, handle: null }
     entry.handle = setInterval(() => {
       const count = this.getClientCount()
       if (count > 0) {
@@ -252,7 +252,7 @@ export class WS {
     }, intervalMs)
     this.timers.set(id, entry)
     insertTimerConfig(entry)
-    return { id, name: entry.name, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
+    return { id, name: entry.name, group: entry.group, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
   }
 
   stopTimer (id) {
@@ -278,6 +278,7 @@ export class WS {
       list.push({
         id: t.id,
         name: t.name || '',
+        group: t.group || '',
         message: t.message,
         intervalMs: t.intervalMs,
         startAt: t.startAt,
