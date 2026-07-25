@@ -90,15 +90,15 @@
 </script>
 
 <svelte:head>
-  <title>🌾☠️信使 — 首页</title>
+  <title>信使 — 首页</title>
 </svelte:head>
 
 <div class="mb-6">
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <StatCard label="WebSocket 连接数" value={clientCount} sub="上限 1000" color="green" />
+    <StatCard label="WebSocket 连接数" value={clientCount} sub="上限 1000" color="accent" />
     <StatCard label="CPU 使用率" value={cpuUsage} sub={cpuModel} color="blue" />
     <StatCard label="堆内存" value={heapUsed} sub={heapTotal} color="amber" />
-    <StatCard label="运行时间" value={uptime} sub={systemMem} color="red" />
+    <StatCard label="运行时间" value={uptime} sub={systemMem} color="rose" />
   </div>
 </div>
 
@@ -111,34 +111,34 @@
       <div class="max-h-[280px] overflow-y-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="sticky top-0 bg-gray-50/80 text-left">
-              <th class="px-5 py-2.5 text-xs font-medium text-gray-400">ID</th>
-              <th class="px-5 py-2.5 text-xs font-medium text-gray-400">IP</th>
-              <th class="px-5 py-2.5 text-xs font-medium text-gray-400">连接时间</th>
-              <th class="px-5 py-2.5 text-xs font-medium text-gray-400">状态</th>
-              <th class="px-5 py-2.5 text-xs font-medium text-gray-400">操作</th>
+            <tr class="sticky top-0 bg-slate-800/80 backdrop-blur-sm text-left">
+              <th class="px-5 py-2.5 text-xs font-medium text-slate-500">ID</th>
+              <th class="px-5 py-2.5 text-xs font-medium text-slate-500">IP</th>
+              <th class="px-5 py-2.5 text-xs font-medium text-slate-500">连接时间</th>
+              <th class="px-5 py-2.5 text-xs font-medium text-slate-500">状态</th>
+              <th class="px-5 py-2.5 text-xs font-medium text-slate-500">操作</th>
             </tr>
           </thead>
           <tbody>
             {#each clients as c}
-              <tr class="border-b border-gray-50 last:border-b-0">
-                <td class="px-5 py-2.5 text-gray-700">#{c.id}</td>
-                <td class="px-5 py-2.5 text-gray-600">{c.ip}</td>
-                <td class="px-5 py-2.5 text-gray-500 text-xs">{fmtTime(c.connectedAt)}</td>
+              <tr class="border-b border-white/5 last:border-b-0 hover:bg-white/[0.02] transition-colors">
+                <td class="px-5 py-2.5 text-slate-200 font-mono text-xs">#{c.id}</td>
+                <td class="px-5 py-2.5 text-slate-400 font-mono text-xs">{c.ip}</td>
+                <td class="px-5 py-2.5 text-slate-500 text-xs">{fmtTime(c.connectedAt)}</td>
                 <td class="px-5 py-2.5">
                   <span class="inline-flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full {c.isOpen ? 'bg-green-500' : 'bg-gray-300'}"></span>
-                    <span class="text-xs {c.isOpen ? 'text-green-600' : 'text-gray-400'}">{c.isOpen ? '在线' : '离线'}</span>
+                    <span class="status-dot {c.isOpen ? 'online' : 'offline'}"></span>
+                    <span class="text-xs {c.isOpen ? 'text-accent-400' : 'text-slate-600'}">{c.isOpen ? '在线' : '离线'}</span>
                   </span>
                 </td>
                 <td class="px-5 py-2.5">
                   {#if c.isOpen}
                     <button
                       onclick={() => kickClient(c.id)}
-                      class="px-3 py-1 border border-red-400 rounded text-xs text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                      class="px-3 py-1 rounded-lg text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/15 hover:border-red-500/50 transition-all duration-200"
                     >踢出</button>
                   {:else}
-                    <span class="text-xs text-gray-300">--</span>
+                    <span class="text-xs text-slate-600">--</span>
                   {/if}
                 </td>
               </tr>
@@ -160,13 +160,13 @@
           {@const detailText = isSend
             ? '→ ' + l.clientCount + ' 客户端, ' + (l.bytes || 0) + ' B: ' + (typeof l.data === 'string' ? l.data : JSON.stringify(l.data)).slice(0, 80)
             : '← 来自 #' + l.clientId + ' ' + l.ip + ': ' + (l.data || '').slice(0, 80)}
-          <div class="px-5 py-2 text-xs border-b border-gray-50 last:border-b-0 flex gap-2.5 items-start">
-            <span class="text-gray-400 whitespace-nowrap min-w-[55px]">{fmtTime(l.time)}</span>
+          <div class="px-5 py-2 text-xs border-b border-white/5 last:border-b-0 flex gap-2.5 items-start hover:bg-white/[0.02] transition-colors">
+            <span class="text-slate-500 whitespace-nowrap min-w-[55px] tabular-nums">{fmtTime(l.time)}</span>
             <span class="inline-block px-1.5 py-px rounded text-[10px] font-semibold whitespace-nowrap min-w-[36px] text-center
-              {isSend ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}">
+              {isSend ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-accent-500/10 text-accent-400 border border-accent-500/20'}">
               {isSend ? '发送' : '接收'}
             </span>
-            <span class="text-gray-600 break-all flex-1">{detailText}</span>
+            <span class="text-slate-400 break-all flex-1">{detailText}</span>
           </div>
         {/each}
       </div>
@@ -180,13 +180,13 @@
   {:else}
     {#each resourceBars as bar}
       {@const cls = barColor(bar.pct)}
-      <div class="px-5 py-3 border-b border-purple-50/50 last:border-b-0">
+      <div class="px-5 py-3 border-b border-white/5 last:border-b-0">
         <div class="flex justify-between text-xs mb-1.5">
-          <span class="text-gray-500">{bar.label}</span>
-          <span class="text-gray-600 font-medium">{bar.detail}</span>
+          <span class="text-slate-400">{bar.label}</span>
+          <span class="text-slate-300 font-medium tabular-nums">{bar.detail}</span>
         </div>
-        <div class="h-2 bg-purple-50 rounded-full overflow-hidden">
-          <div class="h-full rounded-full transition-all duration-500 ease-out {cls}" style="width: {Math.min(bar.pct, 100)}%"></div>
+        <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-700 ease-out {cls}" style="width: {Math.min(bar.pct, 100)}%"></div>
         </div>
       </div>
     {/each}

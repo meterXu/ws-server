@@ -2,12 +2,12 @@
   let { variant = 'default', text = '' } = $props();
 </script>
 
-<span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium
-  {variant === 'success' ? 'bg-green-100 text-green-700' : ''}
-  {variant === 'warning' ? 'bg-amber-100 text-amber-700' : ''}
-  {variant === 'danger' ? 'bg-red-100 text-red-700' : ''}
-  {variant === 'info' ? 'bg-blue-100 text-blue-700' : ''}
-  {variant === 'default' ? 'bg-purple-100 text-purple-700' : ''}
+<span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium border
+  {variant === 'success' ? 'bg-accent-500/10 text-accent-400 border-accent-500/20' : ''}
+  {variant === 'warning' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : ''}
+  {variant === 'danger' ? 'bg-red-500/10 text-red-400 border-red-500/20' : ''}
+  {variant === 'info' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : ''}
+  {variant === 'default' ? 'bg-slate-500/10 text-slate-400 border-slate-500/20' : ''}
 ">
   {text}
 </span>

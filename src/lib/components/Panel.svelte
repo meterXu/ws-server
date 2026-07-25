@@ -2,12 +2,12 @@
   let { title = '', children, badge } = $props();
 </script>
 
-<div class="bg-white rounded-xl shadow-sm border border-purple-50 overflow-hidden mb-4">
+<div class="glass rounded-2xl overflow-hidden mb-4 animate-fade-in">
   {#if title}
-    <div class="px-5 py-3.5 text-sm font-semibold text-gray-700 border-b border-purple-50 flex items-center justify-between">
+    <div class="px-5 py-3.5 text-sm font-semibold text-slate-200 border-b border-white/5 flex items-center justify-between">
       <span>{title}</span>
       {#if badge}
-        <span class="text-xs font-normal text-gray-400 bg-gray-50 px-2.5 py-0.5 rounded-full">
+        <span class="text-xs font-normal text-slate-400 bg-white/5 px-2.5 py-0.5 rounded-full border border-white/5">
           {@render badge()}
         </span>
       {/if}

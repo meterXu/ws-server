@@ -5,29 +5,32 @@
   let { children } = $props();
 
   const navItems = [
-    { href: '/', label: '首页' },
-    { href: '/admin', label: '广播' },
-    { href: '/timer', label: '推送' },
-    { href: '/reports', label: '回复' }
+    { href: '/', label: '首页', icon: '●' },
+    { href: '/admin', label: '广播', icon: '◆' },
+    { href: '/timer', label: '推送', icon: '◈' },
+    { href: '/reports', label: '回复', icon: '◇' },
   ];
 </script>
 
-<header class="bg-white border-b border-purple-100 h-14 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
-  <h1 class="text-lg font-semibold text-purple-900">🌾☠️信使</h1>
+<header class="glass-strong sticky top-0 z-50 h-14 flex items-center justify-between px-6 border-b border-white/5">
+  <div class="flex items-center gap-3">
+    <span class="text-lg font-semibold text-slate-100 tracking-tight">☠️🌾信使</span>
+    <span class="text-[10px] px-2 py-0.5 rounded-full bg-accent-500/15 text-accent-400 font-medium border border-accent-500/20">WS</span>
+  </div>
   <nav class="flex items-center gap-1">
     {#each navItems as item}
       <a
         href={item.href}
-        class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors no-underline
+        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 no-underline
                {$page.url.pathname === item.href
-                 ? 'bg-purple-100 text-purple-700'
-                 : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'}">
+                 ? 'bg-white/10 text-white shadow-glass-sm border border-white/10'
+                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}">
         {item.label}
       </a>
     {/each}
   </nav>
 </header>
 
-<main class="max-w-[1200px] mx-auto p-6">
+<main class="relative z-10 max-w-[1366px] mx-auto p-6">
   {@render children()}
 </main>

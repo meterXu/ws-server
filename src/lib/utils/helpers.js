@@ -36,7 +36,7 @@ export function escAttr(s) {
 }
 
 export function barColor(pct) {
-  if (pct < 50) return 'bg-green-500';
-  if (pct < 80) return 'bg-yellow-500';
+  if (pct < 50) return 'bg-accent-500';
+  if (pct < 80) return 'bg-amber-500';
   return 'bg-red-500';
 }

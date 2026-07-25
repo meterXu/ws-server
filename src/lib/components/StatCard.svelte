@@ -1,19 +1,22 @@
 <script>
-  let { label = '', value = '--', sub = '', color = 'purple' } = $props();
+  let { label = '', value = '--', sub = '', color = 'accent' } = $props();
+
+  const colorMap = {
+    accent:  { value: 'text-accent-400',     glow: 'shadow-glow',        dot: 'bg-accent-500' },
+    blue:    { value: 'text-blue-400',       glow: 'shadow-glow-blue',   dot: 'bg-blue-500' },
+    amber:   { value: 'text-amber-400',      glow: '',                   dot: 'bg-amber-500' },
+    rose:    { value: 'text-rose-400',       glow: '',                   dot: 'bg-rose-500' },
+  };
+
+  let c = $derived(colorMap[color] || colorMap.accent);
 </script>
 
-<div class="bg-white rounded-xl p-5 shadow-sm border border-purple-50">
-  <div class="text-xs text-gray-400 mb-1.5 tracking-wide uppercase">{label}</div>
-  <div class="text-2xl font-bold
-    {color === 'green' ? 'text-green-500' : ''}
-    {color === 'blue' ? 'text-blue-500' : ''}
-    {color === 'amber' ? 'text-amber-500' : ''}
-    {color === 'red' ? 'text-red-500' : ''}
-    {color === 'purple' ? 'text-purple-600' : ''}
-  ">
+<div class="glass rounded-2xl p-5 {c.glow} animate-fade-in">
+  <div class="text-xs text-slate-400 mb-1.5 tracking-wide font-medium uppercase">{label}</div>
+  <div class="text-2xl font-bold {c.value} tabular-nums tracking-tight">
     {value}
   </div>
   {#if sub}
-    <div class="text-xs text-gray-400 mt-1">{sub}</div>
+    <div class="text-xs text-slate-500 mt-1">{sub}</div>
   {/if}
 </div>
