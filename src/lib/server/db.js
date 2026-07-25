@@ -6,8 +6,8 @@ import { dirname, join, resolve } from 'node:path'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// src/lib/server/db.js → 向上 2 级到达项目根目录
-const webRoot = resolve(__dirname, '..', '..')
+// src/lib/server/db.js → 向上 3 级到达项目根目录
+const webRoot = resolve(__dirname, '..', '..', '..')
 const DB_DIR = join(webRoot, 'data')
 mkdirSync(DB_DIR, { recursive: true })
 
