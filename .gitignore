@@ -2,7 +2,6 @@
 /.claude
 node_modules
 .DS_Store
-src/.DS_Store
-src/controller/.DS_Store
-src/.DS_Store
 data/
+build/
+.svelte-kit/
