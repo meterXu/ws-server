@@ -51,7 +51,7 @@
         body: JSON.stringify({ name: nameValue, message: payload, interval: intervalValue })
       });
       const data = await res.json();
-      data.success ? (showResult('success', '定时器 #' + data.timer.id + ' 已启动'), refreshStatus())
+      data.success ? (showResult('success', '「' + (nameValue || data.timer.name) + '」已启动'), refreshStatus())
                     : showResult('error', data.message);
     } catch (err) { showResult('error', '请求失败: ' + err.message); }
   }
@@ -61,7 +61,8 @@
     try {
       const res = await fetch('/api/timer/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
       const data = await res.json();
-      data.success ? (showResult('success', '定时器 #' + id + ' 已停止'), refreshStatus()) : showResult('error', data.message);
+      const name = (prevTimers.find(t => t.id === id) || {}).name;
+      data.success ? (showResult('success', '「' + (name || '定时器' + id) + '」已停止'), refreshStatus()) : showResult('error', data.message);
     } catch (err) { showResult('error', '请求失败: ' + err.message); }
     finally { unlock(key); }
   }
@@ -72,7 +73,7 @@
     if (!timer) return; lock(key);
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: timer.name, message: timer.message, interval: Math.round(timer.intervalMs / 1000) }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: timer.name, message: timer.message, interval: Math.round(timer.intervalMs / 1000), startAt: timer.startAt }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       startRes.success ? (showResult('success', '定时器已重启'), refreshStatus()) : showResult('error', startRes.message);
@@ -116,7 +117,7 @@
     if (!edit.interval || edit.interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: edit.name, message: payload, interval: edit.interval }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: edit.name, message: payload, interval: edit.interval, startAt: (prevTimers.find(t => t.id === id) || {}).startAt }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       if (startRes.success) {
@@ -133,9 +134,9 @@
     return true;
   }
 
-  function addLogEntry(timerId, count, cc) {
+  function addLogEntry(name, count, cc) {
     const now = new Date();
-    logEntries = [{ time: now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0'), timerId, count, clientCount: cc }, ...logEntries.slice(0, 79)];
+    logEntries = [{ time: now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0'), name, count, clientCount: cc }, ...logEntries.slice(0, 79)];
   }
 
   async function refreshStatus() {
@@ -149,7 +150,7 @@
       if (ts.success && ts.timers) {
         for (const t of ts.timers) {
           const prev = prevTimers.find(p => p.id === t.id);
-          if (prev && t.sendCount > prev.sendCount && t.active) addLogEntry(t.id, t.sendCount, cs.clientCount);
+          if (prev && t.sendCount > prev.sendCount && t.active) addLogEntry(t.name || '定时器' + t.id, t.sendCount, cs.clientCount);
         }
         if (!sameStructure(prevTimers, ts.timers)) timers = ts.timers;
         prevTimers = ts.timers;
@@ -184,7 +185,7 @@
   <div class="p-5">
     <div class="mb-4">
       <span class="block text-xs text-gray-500 mb-2">定时器名称</span>
-      <input type="text" bind:value={nameValue} placeholder="例如: 每日推送" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
+      <input type="text" bind:value={nameValue} placeholder="例如: 每日推送" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
     </div>
     <div class="mb-4">
       <span class="block text-xs text-gray-500 mb-2">消息内容（JSON）</span>
@@ -218,13 +219,13 @@
           {@const edit = editingTimers[t.id]}
           <div class="border rounded-xl p-4 transition-shadow hover:shadow-sm {t.active ? 'border-l-[3px] border-l-green-500 bg-green-50/30' : 'border-l-[3px] border-l-gray-300 bg-gray-50/50'}">
             <div class="flex items-center justify-between mb-2.5">
-              <span class="font-semibold text-sm">{t.name || '定时器 #' + t.id}</span>
+              <span class="font-semibold text-sm">{t.name || '定时器' + t.id}</span>
               <Badge text={t.active ? '运行中' : '已停止'} variant={t.active ? 'success' : 'default'} />
             </div>
             {#if editing}
               <div class="mb-2">
                 <span class="text-xs text-gray-500 block mb-1">名称</span>
-                <input type="text" bind:value={edit.name} placeholder="例如: 每日推送" class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
+                <input type="text" bind:value={edit.name} placeholder="例如: 每日推送" required class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
               </div>
               <div class="mb-2">
                 <span class="text-xs text-gray-500 block mb-1">消息内容（JSON）</span>
@@ -266,7 +267,7 @@
       {#each logEntries as entry}
         <div class="px-5 py-2 text-xs border-b border-gray-50 last:border-b-0 flex gap-2.5 items-center">
           <span class="text-gray-400 whitespace-nowrap">{entry.time}</span>
-          <span class="text-purple-600 font-medium">#{entry.timerId}</span>
+          <span class="text-purple-600 font-medium">{entry.name}</span>
           <span>第 <span class="text-purple-600 font-medium">{entry.count}</span> 次广播</span>
           <span class="text-gray-500">→ {entry.clientCount} 个客户端</span>
         </div>

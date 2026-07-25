@@ -239,9 +239,9 @@ export class WS {
     return id
   }
 
-  startTimer (name, message, intervalMs) {
+  startTimer (name, message, intervalMs, startAt) {
     const id = this._nextAvailableTimerId()
-    const entry = { id, name: name || '', message, intervalMs, startAt: Date.now(), sendCount: 0, handle: null }
+    const entry = { id, name: name || '', message, intervalMs, startAt: startAt || Date.now(), sendCount: 0, handle: null }
     entry.handle = setInterval(() => {
       const count = this.getClientCount()
       if (count > 0) {
