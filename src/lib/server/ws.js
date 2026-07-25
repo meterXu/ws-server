@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import {
   loadMessageLogs, insertMessageLog, trimMessageLogs,
   loadTimerConfigs, insertTimerConfig, updateTimerSendCount, deleteTimerConfig,
-  loadStats, saveStats, getKV, setKV,
+  loadStats, saveStats,
   loadAutoReplyRules, insertAutoReplyRule, updateAutoReplyRule, deleteAutoReplyRule,
   loadReportLogs, insertReportLog, trimReportLogs
 } from './db.js'
@@ -52,7 +52,6 @@ export class WS {
     this._totalBytesSent = stats.totalBytesSent
     this._totalSendCount = stats.totalSendCount
 
-    this._nextTimerId = 0
     this.timers = new Map()
     this._loadTimers()
   }
@@ -70,11 +69,8 @@ export class WS {
         }
       }, cfg.intervalMs)
       this.timers.set(cfg.id, cfg)
-      console.log(`[Timer] 已恢复定时器 #${cfg.id}，间隔 ${cfg.intervalMs}ms`)
+      console.log(`[Timer] 已恢复定时器 #${cfg.id}${cfg.name ? '（' + cfg.name + '）' : ''}，间隔 ${cfg.intervalMs}ms`)
     }
-    const maxLoaded = configs.length > 0 ? Math.max(...configs.map(c => c.id)) : 0
-    const storedNext = parseInt(getKV('_nextTimerId', '0'), 10)
-    this._nextTimerId = Math.max(maxLoaded, storedNext)
   }
 
   init (server) {
@@ -235,10 +231,17 @@ export class WS {
 
   // ---- 定时广播 ----
 
-  startTimer (message, intervalMs) {
-    const id = ++this._nextTimerId
-    setKV('_nextTimerId', String(this._nextTimerId))
-    const entry = { id, message, intervalMs, startAt: Date.now(), sendCount: 0, handle: null }
+  _nextAvailableTimerId () {
+    // 复用已删除的最小可用编号，保持列表编号稳定
+    const used = new Set(this.timers.keys())
+    let id = 1
+    while (used.has(id)) id++
+    return id
+  }
+
+  startTimer (name, message, intervalMs) {
+    const id = this._nextAvailableTimerId()
+    const entry = { id, name: name || '', message, intervalMs, startAt: Date.now(), sendCount: 0, handle: null }
     entry.handle = setInterval(() => {
       const count = this.getClientCount()
       if (count > 0) {
@@ -249,7 +252,7 @@ export class WS {
     }, intervalMs)
     this.timers.set(id, entry)
     insertTimerConfig(entry)
-    return { id, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
+    return { id, name: entry.name, message, intervalMs, startAt: entry.startAt, sendCount: 0, active: true }
   }
 
   stopTimer (id) {
@@ -274,6 +277,7 @@ export class WS {
     for (const t of this.timers.values()) {
       list.push({
         id: t.id,
+        name: t.name || '',
         message: t.message,
         intervalMs: t.intervalMs,
         startAt: t.startAt,
@@ -281,6 +285,8 @@ export class WS {
         active: t.handle !== null
       })
     }
+    // 按创建时间排序
+    list.sort((a, b) => a.startAt - b.startAt)
     return list
   }
 }

@@ -4,8 +4,9 @@ import { getWS } from '$lib/server/ws.js'
 /** POST /api/timer/start — 启动定时广播 */
 export async function POST ({ request }) {
   const ws = getWS()
-  const { message, interval } = await request.json()
+  const { name, message, interval } = await request.json()
 
+  if (!name || !name.trim()) return json({ success: false, message: 'name 不能为空' })
   if (!message) return json({ success: false, message: 'message 不能为空' })
 
   const messageStr = JSON.stringify(message)
@@ -16,7 +17,7 @@ export async function POST ({ request }) {
     return json({ success: false, message: '间隔必须 >= 1 秒' })
   }
 
-  const timer = ws.startTimer(message, interval * 1000)
-  console.log('[Timer] 定时广播 #' + timer.id + ' 已启动，间隔 ' + interval + 's')
+  const timer = ws.startTimer(name.trim(), message, interval * 1000)
+  console.log('[Timer] 定时广播 #' + timer.id + (timer.name ? '（' + timer.name + '）' : '') + ' 已启动，间隔 ' + interval + 's')
   return json({ success: true, message: '定时广播已启动', timer })
 }

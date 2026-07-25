@@ -19,6 +19,7 @@
   let editorComponent;
   let editorValue = '{\n  "type": "timer",\n  "message": "定时广播消息"\n}';
   let intervalValue = 2;
+  let nameValue = '';
 
   // per-timer edit state
   let editingTimers = {};
@@ -39,6 +40,7 @@
 
   async function addTimer() {
     const raw = editorComponent ? editorComponent.getValue().trim() : editorValue;
+    if (!nameValue.trim()) { showResult('error', '定时器名称不能为空'); return; }
     if (!raw) { showResult('error', '消息内容不能为空'); return; }
     let payload;
     try { payload = JSON.parse(raw); } catch { showResult('error', 'JSON 格式无效'); return; }
@@ -46,7 +48,7 @@
     try {
       const res = await fetch('/api/timer/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: payload, interval: intervalValue })
+        body: JSON.stringify({ name: nameValue, message: payload, interval: intervalValue })
       });
       const data = await res.json();
       data.success ? (showResult('success', '定时器 #' + data.timer.id + ' 已启动'), refreshStatus())
@@ -70,7 +72,7 @@
     if (!timer) return; lock(key);
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: timer.message, interval: Math.round(timer.intervalMs / 1000) }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: timer.name, message: timer.message, interval: Math.round(timer.intervalMs / 1000) }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       startRes.success ? (showResult('success', '定时器已重启'), refreshStatus()) : showResult('error', startRes.message);
@@ -92,6 +94,7 @@
     const timer = prevTimers.find(t => t.id === id);
     if (!timer) return;
     editingTimers[id] = {
+      name: timer.name || '',
       msg: JSON.stringify(timer.message, null, 2),
       interval: Math.round(timer.intervalMs / 1000)
     };
@@ -105,6 +108,7 @@
   async function updateTimer(id) {
     const edit = editingTimers[id];
     if (!edit) return;
+    if (!edit.name.trim()) { showResult('error', '定时器名称不能为空'); return; }
     const raw = edit.msg.trim();
     if (!raw) { showResult('error', '消息内容不能为空'); return; }
     let payload;
@@ -112,7 +116,7 @@
     if (!edit.interval || edit.interval < 1) { showResult('error', '间隔必须 >= 1 秒'); return; }
     try {
       const [startRes] = await Promise.all([
-        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: payload, interval: edit.interval }) }).then(r => r.json()),
+        fetch('/api/timer/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: edit.name, message: payload, interval: edit.interval }) }).then(r => r.json()),
         fetch('/api/timer/remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).then(r => r.json())
       ]);
       if (startRes.success) {
@@ -179,6 +183,10 @@
 <Panel title="添加定时广播">
   <div class="p-5">
     <div class="mb-4">
+      <span class="block text-xs text-gray-500 mb-2">定时器名称</span>
+      <input type="text" bind:value={nameValue} placeholder="例如: 每日推送" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all" />
+    </div>
+    <div class="mb-4">
       <span class="block text-xs text-gray-500 mb-2">消息内容（JSON）</span>
       <JsonEditor bind:this={editorComponent} value={editorValue} onChange={v => editorValue = v} height="100px" />
     </div>
@@ -210,10 +218,14 @@
           {@const edit = editingTimers[t.id]}
           <div class="border rounded-xl p-4 transition-shadow hover:shadow-sm {t.active ? 'border-l-[3px] border-l-green-500 bg-green-50/30' : 'border-l-[3px] border-l-gray-300 bg-gray-50/50'}">
             <div class="flex items-center justify-between mb-2.5">
-              <span class="font-semibold text-sm">定时器 #{t.id}</span>
+              <span class="font-semibold text-sm">{t.name || '定时器 #' + t.id}</span>
               <Badge text={t.active ? '运行中' : '已停止'} variant={t.active ? 'success' : 'default'} />
             </div>
             {#if editing}
+              <div class="mb-2">
+                <span class="text-xs text-gray-500 block mb-1">名称</span>
+                <input type="text" bind:value={edit.name} placeholder="例如: 每日推送" class="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-purple-400" />
+              </div>
               <div class="mb-2">
                 <span class="text-xs text-gray-500 block mb-1">消息内容（JSON）</span>
                 <textarea bind:value={edit.msg} class="w-full h-20 p-2 border border-gray-200 rounded-md text-xs font-mono resize-y focus:outline-none focus:border-purple-400"></textarea>

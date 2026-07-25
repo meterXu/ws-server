@@ -10,8 +10,6 @@
     { href: '/timer', label: '推送' },
     { href: '/reports', label: '回复' }
   ];
-
-  let currentPath = $derived(page.url.pathname);
 </script>
 
 <header class="bg-white border-b border-purple-100 h-14 flex items-center justify-between px-6 shadow-sm sticky top-0 z-10">
@@ -21,7 +19,7 @@
       <a
         href={item.href}
         class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors no-underline
-               {currentPath === item.href
+               {$page.url.pathname === item.href
                  ? 'bg-purple-100 text-purple-700'
                  : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'}">
         {item.label}

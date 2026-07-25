@@ -1,4 +1,4 @@
-<script>
+定时器列表<script>
   import { onMount, onDestroy } from 'svelte';
   import { elapsed } from '$lib/utils/helpers.js';
   import StatCard from '$lib/components/StatCard.svelte';
