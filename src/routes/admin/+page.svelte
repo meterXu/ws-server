@@ -203,7 +203,7 @@
   onDestroy(() => { mounted = false; if (timeout) clearTimeout(timeout); });
 </script>
 
-<svelte:head><title>信使 — 广播</title></svelte:head>
+<svelte:head><title>DuMiMessager — 广播</title></svelte:head>
 
 <div class="mb-6">
   <div class="grid grid-cols-4 gap-4">

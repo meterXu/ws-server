@@ -192,7 +192,7 @@
   });
 </script>
 
-<svelte:head><title>信使 — 回复</title></svelte:head>
+<svelte:head><title>DuMiMessager — 回复</title></svelte:head>
 
 <div class="mb-6">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">

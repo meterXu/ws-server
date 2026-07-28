@@ -103,6 +103,16 @@
 
   async function toggleTimer(id, active) { active ? restartTimer(id) : stopTimer(id); }
 
+  async function toggleGroup(groupName, active) {
+    const group = prevTimers.filter(t => (t.group || '默认分组') === groupName);
+    const promises = [];
+    for (const t of group) {
+      if (active && !t.active) promises.push(restartTimer(t.id));
+      else if (!active && t.active) promises.push(stopTimer(t.id));
+    }
+    await Promise.all(promises);
+  }
+
   function startEdit(id) {
     const timer = prevTimers.find(t => t.id === id);
     if (!timer) return;
@@ -184,7 +194,7 @@
   onDestroy(() => { mounted = false; if (timeout) clearTimeout(timeout); });
 </script>
 
-<svelte:head><title>信使 — 推送</title></svelte:head>
+<svelte:head><title>DuMiMessager — 推送</title></svelte:head>
 
 <div class="mb-6">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -255,14 +265,19 @@
       {#each groupedTimers as [groupName, groupTimers]}
         {@const collapsed = collapsedGroups[groupName] === true}
         <div class="glass-subtle rounded-2xl overflow-hidden">
-          <button
-            onclick={() => { collapsedGroups[groupName] = !collapsed; collapsedGroups = collapsedGroups; }}
-            class="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-white/[0.03] transition-colors text-left"
-          >
-            <span class="text-xs text-slate-500 transition-transform duration-200 {collapsed ? '' : 'rotate-90'}">▶</span>
-            <span class="text-sm font-semibold text-slate-200">{groupName}</span>
-            <span class="text-xs text-slate-500 ml-auto">{groupTimers.filter(t => t.active).length}/{groupTimers.length} 活跃</span>
-          </button>
+          <div class="flex items-center px-4 py-2.5 hover:bg-white/[0.03] transition-colors">
+            <button
+              onclick={() => { collapsedGroups[groupName] = !collapsed; collapsedGroups = collapsedGroups; }}
+              class="flex-1 flex items-center gap-2 text-left bg-transparent border-none p-0 cursor-pointer"
+            >
+              <span class="text-xs text-slate-500 transition-transform duration-200 {collapsed ? '' : 'rotate-90'}">▶</span>
+              <span class="text-sm font-semibold text-slate-200">{groupName}</span>
+              <span class="text-xs text-slate-500 ml-auto mr-3">{groupTimers.filter(t => t.active).length}/{groupTimers.length} 活跃</span>
+            </button>
+            <div title={groupTimers.some(t => t.active) ? "停止此分组所有定时器" : "启动此分组所有定时器"}>
+              <Toggle checked={groupTimers.some(t => t.active)} onChanged={v => toggleGroup(groupName, v)} />
+            </div>
+          </div>
           {#if !collapsed}
             <div class="p-3">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -90,7 +90,7 @@
 </script>
 
 <svelte:head>
-  <title>信使 — 首页</title>
+  <title>DuMiMessager — 首页</title>
 </svelte:head>
 
 <div class="mb-6">

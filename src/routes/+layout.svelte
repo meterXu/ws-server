@@ -14,7 +14,7 @@
 
 <header class="glass-strong sticky top-0 z-50 h-14 flex items-center justify-between px-6 border-b border-white/5">
   <div class="flex items-center gap-3">
-    <span class="text-lg font-semibold text-slate-100 tracking-tight">☠️🌾信使</span>
+    <span class="text-lg font-semibold text-slate-100 tracking-tight">DuMiMessager</span>
     <span class="text-[10px] px-2 py-0.5 rounded-full bg-accent-500/15 text-accent-400 font-medium border border-accent-500/20">WS</span>
   </div>
   <nav class="flex items-center gap-1">
