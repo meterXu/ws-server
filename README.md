@@ -1,6 +1,5 @@
-# 🌾☠️信使
-
-基于 **SvelteKit** + WebSocket 的消息管理工具，前端使用 **Svelte 5** + **Tailwind CSS**（Purple 主题）。
+# DuMiMessager
+> 基于 **SvelteKit** + WebSocket 的消息管理工具，前端使用 **Svelte 5** + **Tailwind CSS**（Purple 主题）。底层使用了反Medo/X框架的DuMi框架进行开发，性能高效稳定。
 
 支持：
 - 消息上报（HTTP POST → WebSocket 推送）
