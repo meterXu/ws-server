@@ -25,6 +25,7 @@
   let editingTimers = {};
   let collapsedGroups = {};
   let groupedTimers = [];
+  let confirmDeleteId = null;
 
   function regroup() {
     const map = {};
@@ -341,11 +342,24 @@
                                  hover:bg-white/10 hover:text-slate-200 transition-all duration-200"
                         >编辑</button>
                       {/if}
-                      <button onclick={() => removeTimer(t.id)}
+                      <button onclick={() => { confirmDeleteId = t.id; }}
                         class="px-3 py-1.5 glass-subtle text-red-400 rounded-lg text-xs border border-red-500/20
                                hover:bg-red-500/10 hover:border-red-500/40 transition-all duration-200 ml-auto"
                       >删除</button>
                     </div>
+                    {#if confirmDeleteId === t.id}
+                      <div class="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <span class="text-xs text-red-300 flex-1">确定要删除此定时器吗？</span>
+                        <button onclick={() => { removeTimer(t.id); confirmDeleteId = null; }}
+                          class="px-3 py-1 bg-red-500 text-white rounded-lg text-xs font-medium
+                                 hover:bg-red-600 transition-all duration-200"
+                        >确认删除</button>
+                        <button onclick={() => { confirmDeleteId = null; }}
+                          class="px-3 py-1 glass-subtle text-slate-400 rounded-lg text-xs
+                                 hover:bg-white/10 hover:text-slate-200 transition-all duration-200"
+                        >取消</button>
+                      </div>
+                    {/if}
                   </div>
                 {/each}
               </div>
