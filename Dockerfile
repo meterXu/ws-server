@@ -1,5 +1,5 @@
 # ---- Stage 1: Build SvelteKit frontend ----
-FROM 172.16.150.3:8082/node:22-bullseye-slim AS web-builder
+FROM node:22-bullseye-slim AS web-builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -7,7 +7,7 @@ COPY . ./
 RUN npm run build
 
 # ---- Stage 2: Production server ----
-FROM 172.16.150.3:8082/node:22-bullseye-slim
+FROM node:22-bullseye-slim
 
 WORKDIR /app
 
