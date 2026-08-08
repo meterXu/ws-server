@@ -1,5 +1,7 @@
 /.idea/
-/.claude
+/.claude/settings.local.json
+/.claude/worktrees/
+/.claude/agents/
 node_modules
 .DS_Store
 data/

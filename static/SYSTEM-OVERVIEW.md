@@ -7,7 +7,7 @@
 ### 技术栈
 
 | 层级 | 技术 |
-|---|---|
+| --- | --- |
 | 框架 | SvelteKit 2.x (Svelte 5 runes) |
 | 样式 | Tailwind CSS 3.x + 自定义玻璃态主题 |
 | 数据库 | SQLite via better-sqlite3 (WAL 模式) |
@@ -63,7 +63,7 @@
 ### 3.1 页面路由
 
 | 路径 | 页面 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | `/login` | 登录页 | 用户名+密码登录，未登录用户自动重定向到此 |
 | `/` | 首页 | 仪表盘/概览 |
 | `/admin` | 广播页 | 向所有 WS 客户端广播消息，JSON 编辑器 |
@@ -75,7 +75,7 @@
 #### 认证 (/api/auth/*)
 
 | 方法 | 路径 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/api/auth/login` | 登录：验证用户名密码，返回 session cookie |
 | POST | `/api/auth/logout` | 退出：清除 session |
 | GET | `/api/auth/me` | 获取当前登录用户信息 |
@@ -86,7 +86,7 @@
 #### WebSocket 管理
 
 | 方法 | 路径 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/api/broadcast` | 向所有 WS 客户端广播消息 |
 | GET | `/api/clients` | 获取在线客户端数量 |
 | GET | `/api/clients/detail` | 获取客户端详细信息列表 |
@@ -98,7 +98,7 @@
 #### 定时器 (/api/timer/*)
 
 | 方法 | 路径 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | POST | `/api/timer/start` | 创建并启动定时器 |
 | POST | `/api/timer/stop` | 停止定时器 |
 | POST | `/api/timer/remove` | 删除定时器 |
@@ -107,7 +107,7 @@
 #### 自动回复 (/api/auto-reply/*)
 
 | 方法 | 路径 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | GET | `/api/auto-reply/rules` | 列出所有自动回复规则 |
 | POST | `/api/auto-reply/rules` | 创建规则 |
 | PUT | `/api/auto-reply/rules/:id` | 更新规则 |
@@ -117,7 +117,7 @@
 #### 系统
 
 | 方法 | 路径 | 功能 |
-|---|---|---|
+| --- | --- | --- |
 | GET | `/api/system/stats` | 获取系统统计（连接数、发送量等） |
 | POST | `/api/report` | 外部 HTTP 上报（无需认证） |
 
@@ -143,7 +143,7 @@ ws://host/ws?token=<8位hex>
 ### 服务器 → 客户端消息
 
 | Type | 说明 |
-|---|---|
+| --- | --- |
 | `welcome` | 连接成功后首条消息，含 clientId |
 | `ws-message` | 来自其他客户端的消息 |
 
@@ -155,7 +155,7 @@ ws://host/ws?token=<8位hex>
 
 **users** — 管理员用户
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | id | INTEGER PK | 用户ID |
 | username | TEXT UNIQUE | 用户名 |
 | password | TEXT | scrypt 哈希 (salt:hash) |
@@ -163,7 +163,7 @@ ws://host/ws?token=<8位hex>
 
 **kv_store** — 键值存储（会话、WS token、统计）
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | key | TEXT PK | 键 |
 | value | TEXT | 值 |
 
@@ -175,13 +175,13 @@ ws://host/ws?token=<8位hex>
 
 **message_logs** — WS 消息日志
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | id | INTEGER PK | 自增ID |
 | entry_json | TEXT | JSON 消息体 |
 
 **timer_configs** — 定时器配置
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | id | INTEGER PK | 定时器ID |
 | name | TEXT | 名称 |
 | group_name | TEXT | 分组 |
@@ -192,7 +192,7 @@ ws://host/ws?token=<8位hex>
 
 **auto_reply_rules** — 自动回复规则
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | id | INTEGER PK | 规则ID |
 | name | TEXT | 规则名称 |
 | pattern | TEXT | 正则表达式 |
@@ -203,7 +203,7 @@ ws://host/ws?token=<8位hex>
 
 **report_logs** — HTTP 上报日志
 | 列 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | id | INTEGER PK | 自增ID |
 | time | TEXT | 时间 |
 | ip | TEXT | 来源IP |
@@ -221,7 +221,7 @@ ws://host/ws?token=<8位hex>
 ### 双 Token 体系
 
 | Token 类型 | 用途 | 长度 | 有效期 | 存储 |
-|---|---|---|---|---|
+| --- | --- | --- | --- |---|
 | Session Token | HTTP 登录态 (cookie) | 64位 hex | 24小时 | kv_store |
 | WS Token | WebSocket 鉴权 (URL参数) | 8位 hex | 永久(手动刷新) | kv_store 双向索引 |
 
@@ -242,7 +242,7 @@ ws://host/ws?token=<8位hex>
 ## 7. 组件库
 
 | 组件 | 文件 | 用途 |
-|---|---|---|
+| --- | --- | --- |
 | Badge | `src/lib/components/Badge.svelte` | 行内标签，支持 success/warning/danger/info/default 变体 |
 | ChangePasswordModal | `src/lib/components/ChangePasswordModal.svelte` | 修改密码模态框 |
 | Empty | `src/lib/components/Empty.svelte` | 空状态占位（收件箱 SVG 图标 + 提示文字） |
@@ -273,7 +273,7 @@ ws://host/ws?token=<8位hex>
 ### 工具函数
 
 | 文件 | 导出 | 用途 |
-|---|---|---|
+| --- | --- | --- |
 | `src/lib/utils/helpers.js` | `fmtBytes`, `fmtUptime`, `elapsed`, `timePart`, `datePart`, `escHtml`, `escAttr`, `barColor` | 格式化与转义 |
 | `src/lib/utils/cn.js` | `cn()` | clsx + tailwind-merge 合并类名 |
 
@@ -299,7 +299,7 @@ npm run start      # node server.js on port 3000
 ## 9. 关键约束
 
 | 项目 | 限制值 |
-|---|---|
+| --- | --- |
 | 最大 WS 客户端数 | 1000 |
 | 单条消息最大 | 64KB |
 | 消息日志保留 | 200条 |
