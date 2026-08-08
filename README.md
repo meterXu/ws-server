@@ -10,6 +10,14 @@
 
 可用于模拟 WebSocket、MQTT 服务，WS 开发等环境。
 
+![1.png](static/1.png)
+
+![2.png](static/2.png)
+
+![3.png](static/3.png)
+
+![4.png](static/4.png)
+
 ## 快速开始
 
 ### 开发模式
@@ -31,7 +39,7 @@ npm run build
 npm start
 ```
 
-访问 `http://localhost:3000`。
+访问 `http://localhost:3000`。默认账号密码: admin/admin123
 
 ## Docker 部署
 
