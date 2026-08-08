@@ -1,8 +1,10 @@
 <script>
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
+  import ChangePasswordModal from '$lib/components/ChangePasswordModal.svelte';
   import '../app.css';
 
-  let { children } = $props();
+  let { children, data } = $props();
 
   const navItems = [
     { href: '/', label: '首页' },
@@ -10,14 +12,62 @@
     { href: '/timer', label: '推送' },
     { href: '/reports', label: '回复' },
   ];
+
+  let currentUser = $derived(data.user);
+  let loggingOut = $state(false);
+  let showChangePwd = $state(false);
+  let wsUrl = $state(data.wsUrl || '');
+  let copied = $state(false);
+  let refreshing = $state(false);
+
+  // 每次导航时从服务端数据同步最新 wsUrl
+  $effect(() => {
+    if (data.wsUrl) wsUrl = data.wsUrl;
+  });
+
+  onMount(async () => {
+    try {
+      const res = await fetch('/api/auth/ws-token');
+      const d = await res.json();
+      if (d.success) wsUrl = d.wsUrl;
+    } catch {}
+  });
+
+  async function copyWsUrl() {
+    if (!wsUrl) return;
+    try {
+      await navigator.clipboard.writeText(wsUrl);
+      copied = true;
+      setTimeout(() => copied = false, 2000);
+    } catch {}
+  }
+
+  async function refreshWsToken() {
+    refreshing = true;
+    try {
+      const res = await fetch('/api/auth/ws-token', { method: 'POST' });
+      const d = await res.json();
+      if (d.success) wsUrl = d.wsUrl;
+    } catch {}
+    refreshing = false;
+  }
+
+  async function handleLogout() {
+    loggingOut = true;
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    window.location.href = '/login';
+  }
 </script>
 
-<header class="glass-strong sticky top-0 z-50 h-14 flex items-center justify-between px-6 border-b border-white/5">
-  <div class="flex items-center gap-3">
+{#if $page.url.pathname !== '/login'}
+<header class="glass-strong sticky top-0 z-50 h-14 flex items-center px-6 border-b border-white/5">
+  <div class="flex items-center gap-3 shrink-0">
     <span class="text-lg font-semibold text-slate-100 tracking-tight">DuMiMessager</span>
     <span class="text-[10px] px-2 py-0.5 rounded-full bg-accent-500/15 text-accent-400 font-medium border border-accent-500/20">WS</span>
   </div>
-  <nav class="flex items-center gap-1">
+  <nav class="flex items-center gap-1 ml-6">
     {#each navItems as item}
       <a
         href={item.href}
@@ -29,11 +79,56 @@
       </a>
     {/each}
   </nav>
+  <div class="flex items-center gap-2 shrink-0 ml-auto">
+    {#if wsUrl}
+      <div class="flex items-center gap-1.5 border-r border-white/10 pr-2">
+        <span class="text-[11px] text-slate-500 font-mono max-w-[320px] truncate hidden xl:inline" title={wsUrl}>{wsUrl}</span>
+        <button
+          onclick={copyWsUrl}
+          class="px-2 py-1 rounded-lg text-[10px] font-medium transition-all duration-200
+                 text-slate-400 hover:text-accent-400 hover:bg-accent-500/10 border border-white/5 hover:border-accent-500/20"
+          title="复制 WS 地址"
+        >
+          {copied ? '已复制' : '复制'}
+        </button>
+        <button
+          onclick={refreshWsToken}
+          disabled={refreshing}
+          class="px-2 py-1 rounded-lg text-[10px] font-medium transition-all duration-200
+                 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 border border-white/5 hover:border-amber-500/20
+                 disabled:opacity-50"
+          title="刷新 WS 令牌"
+        >
+          {refreshing ? '...' : '刷新'}
+        </button>
+      </div>
+    {/if}
+    <div class="flex items-center gap-2">
+      {#if currentUser}
+        <button
+          onclick={() => showChangePwd = true}
+          class="text-xs text-slate-400 hover:text-slate-200 transition-colors px-2 py-0.5"
+        >{currentUser.username}</button>
+      {/if}
+      <button
+        onclick={handleLogout}
+        disabled={loggingOut}
+        class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200
+               text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20
+               disabled:opacity-50"
+      >
+        {loggingOut ? '...' : '退出'}
+      </button>
+    </div>
+  </div>
 </header>
+{/if}
 
 <main class="relative z-10 max-w-[1366px] mx-auto p-6">
   {@render children()}
 </main>
+
+<ChangePasswordModal show={showChangePwd} onclose={() => showChangePwd = false} />
 
 <style>
   :global(*) {
@@ -84,12 +179,6 @@
   }
   :global(::-webkit-scrollbar-thumb:hover) {
     background: rgba(255, 255, 255, 0.18);
-  }
-
-  :global(:focus-visible) {
-    outline: 2px solid rgba(168, 85, 247, 0.6);
-    outline-offset: 2px;
-    border-radius: 4px;
   }
 
   @media (prefers-reduced-motion: reduce) {

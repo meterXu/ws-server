@@ -1,14 +1,10 @@
 import Database from 'better-sqlite3'
 import { mkdirSync, existsSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join, resolve } from 'node:path'
+import { join } from 'node:path'
+import { randomBytes, scryptSync } from 'node:crypto'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// src/lib/server/db.js → 向上 3 级到达项目根目录
-const webRoot = resolve(__dirname, '..', '..', '..')
-const DB_DIR = join(webRoot, 'data')
+// 使用 process.cwd() 确保源码和构建产物都指向同一个 data 目录
+const DB_DIR = join(process.cwd(), 'data')
 mkdirSync(DB_DIR, { recursive: true })
 
 const dbPath = join(DB_DIR, 'ws-server.db')
@@ -58,6 +54,13 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id         INTEGER PRIMARY KEY,
+    username   TEXT    NOT NULL UNIQUE,
+    password   TEXT    NOT NULL,
+    created_at TEXT    NOT NULL
+  );
 `)
 
 if (isNewDb) {
@@ -65,6 +68,19 @@ if (isNewDb) {
     INSERT INTO auto_reply_rules (id, name, pattern, reply, enabled, match_count, last_match, created_at)
     VALUES (1, '默认规则: Ping', '^ping$', '{"type":"pong","message":"pong"}', 1, 0, NULL, ?)
   `).run(new Date().toISOString())
+}
+
+// 首次启动时创建默认管理员账号 (admin / admin123)
+const userCount = db.prepare('SELECT COUNT(*) AS cnt FROM users').get()
+if (userCount.cnt === 0) {
+  const salt = randomBytes(16).toString('hex')
+  const hash = scryptSync('admin123', salt, 64).toString('hex')
+  db.prepare('INSERT INTO users (id, username, password, created_at) VALUES (1, ?, ?, ?)').run(
+    'admin',
+    salt + ':' + hash,
+    new Date().toISOString()
+  )
+  console.log('[DB] 已创建默认管理员账号: admin / admin123')
 }
 
 // 兼容旧表：为已存在的 timer_configs 添加 name 列
@@ -246,4 +262,32 @@ export function saveStats(totalBytesSent, totalSendCount) {
 
 function safeParse(str) {
   try { return JSON.parse(str) } catch (_) { return str }
+}
+
+// ---- users ----
+
+export function loadUserByUsername(username) {
+  const row = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
+  if (!row) return null
+  return {
+    id: row.id,
+    username: row.username,
+    password: row.password,
+    createdAt: row.created_at
+  }
+}
+
+export function loadUserById(id) {
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(id)
+  if (!row) return null
+  return {
+    id: row.id,
+    username: row.username,
+    password: row.password,
+    createdAt: row.created_at
+  }
+}
+
+export function updateUserPassword(id, passwordHash) {
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(passwordHash, id)
 }

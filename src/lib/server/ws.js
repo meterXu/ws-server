@@ -6,6 +6,7 @@ import {
   loadAutoReplyRules, insertAutoReplyRule, updateAutoReplyRule, deleteAutoReplyRule,
   loadReportLogs, insertReportLog, trimReportLogs
 } from './db.js'
+import { validateWSToken } from './auth.js'
 
 const MAX_MESSAGE_SIZE = 64 * 1024 // 64KB
 const MAX_CLIENTS = 1000
@@ -74,9 +75,34 @@ export class WS {
   }
 
   init (server) {
-    this.ws = new WebSocketServer({ server, path: '/ws' })
+    this.ws = new WebSocketServer({
+      server,
+      path: '/ws',
+      verifyClient: (info, cb) => {
+        const ip = info.req.socket.remoteAddress
+
+        // 鉴权：检查 token 查询参数
+        const token = getQueryParam(info.req.url, 'token')
+        if (!token) {
+          console.warn(`[WS] 拒绝无 token 的连接，IP: ${ip}`)
+          cb(false, 401, '缺少鉴权令牌，请在 URL 中提供 ?token=xxx')
+          return
+        }
+        const auth = validateWSToken(token)
+        if (!auth) {
+          console.warn(`[WS] 拒绝无效 token 的连接，IP: ${ip}`)
+          cb(false, 401, '鉴权令牌无效或已过期')
+          return
+        }
+        info.req._userId = auth.userId
+        cb(true)
+      }
+    })
     this.ws.on('connection', (ws, req) => {
       const ip = req.socket.remoteAddress
+
+      ws._userId = req._userId
+
       if (this.clients.size >= MAX_CLIENTS) {
         console.warn(`[WS] 连接数已达上限 ${MAX_CLIENTS}，拒绝 ${ip}`)
         ws.close(1013, '服务器连接数已达上限')
@@ -289,6 +315,20 @@ export class WS {
     // 按创建时间排序
     list.sort((a, b) => a.startAt - b.startAt)
     return list
+  }
+}
+
+// ---- 工具函数 ----
+
+function getQueryParam(url, name) {
+  if (!url) return null
+  try {
+    const idx = url.indexOf('?')
+    if (idx === -1) return null
+    const params = new URLSearchParams(url.slice(idx))
+    return params.get(name)
+  } catch {
+    return null
   }
 }
 

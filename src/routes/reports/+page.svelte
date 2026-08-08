@@ -24,10 +24,22 @@
   let wsDestroyed = false;
   let reportsMounted = false;
 
-  function connectWS() {
+  async function connectWS() {
     if (wsDestroyed) return;
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    wsRef = new WebSocket(protocol + '//' + location.host + '/ws');
+    try {
+      const tokenRes = await fetch('/api/auth/ws-token');
+      const tokenData = await tokenRes.json();
+      if (!tokenData.success) {
+        // 未登录，稍后重试
+        if (!wsDestroyed) setTimeout(connectWS, 10000);
+        return;
+      }
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsRef = new WebSocket(protocol + '//' + location.host + '/ws?token=' + tokenData.token);
+    } catch {
+      if (!wsDestroyed) setTimeout(connectWS, 5000);
+      return;
+    }
     wsRef.onopen = () => { wsConnected = true; };
     wsRef.onmessage = (event) => {
       try {

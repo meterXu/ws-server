@@ -12,6 +12,24 @@
 
   let container = $state(null);
   let view;
+  let fullscreen = $state(false);
+
+  function toggleFullscreen() {
+    fullscreen = !fullscreen;
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Escape' && fullscreen) {
+      fullscreen = false;
+      e.preventDefault();
+    }
+  }
+
+  $effect(() => {
+    if (fullscreen && view) {
+      queueMicrotask(() => view.requestMeasure());
+    }
+  });
 
   // Purple glass dark theme
   const purpleTheme = EditorView.theme({
@@ -162,9 +180,109 @@
 </script>
 
 {#if browser}
-  <div
-    bind:this={container}
-    class="glass-subtle rounded-xl overflow-hidden glow-ring"
-    style="height: {height}"
-  ></div>
+  <div class="json-editor-wrapper" class:fullscreen>
+    {#if fullscreen}
+      <div
+        class="fullscreen-backdrop"
+        role="button"
+        tabindex="0"
+        onclick={toggleFullscreen}
+        onkeydown={(e) => e.key === 'Enter' && toggleFullscreen()}
+      ></div>
+    {/if}
+    <div
+      bind:this={container}
+      class="glass-subtle rounded-xl overflow-hidden glow-ring"
+      class:fullscreen-editor={fullscreen}
+      style="height: {fullscreen ? '100%' : height}"
+    ></div>
+    <button
+      onclick={toggleFullscreen}
+      class="fullscreen-btn"
+      title={fullscreen ? '退出全屏' : '全屏编辑'}
+    >
+      {#if fullscreen}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 14 10 14 10 20"></polyline>
+          <polyline points="20 10 14 10 14 4"></polyline>
+          <line x1="14" y1="10" x2="21" y2="3"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      {:else}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      {/if}
+    </button>
+  </div>
 {/if}
+
+<svelte:window onkeydown={fullscreen ? handleKeydown : null} />
+
+<style>
+  .json-editor-wrapper {
+    position: relative;
+  }
+
+  .json-editor-wrapper.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .fullscreen-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: -1;
+  }
+
+  .fullscreen-editor {
+    width: 100%;
+    max-width: 1200px;
+    border-radius: 1rem;
+    box-shadow: 0 0 60px rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .fullscreen-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(30, 41, 59, 0.8);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+  }
+
+  .fullscreen-btn:hover {
+    color: #e2e8f0;
+    background: rgba(30, 41, 59, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .fullscreen .fullscreen-btn {
+    top: 32px;
+    right: 32px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+</style>
