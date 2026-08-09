@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { timePart, datePart, escHtml } from '$lib/utils/helpers.js';
+  import { timePart, datePart, escHtml, copyToClipboard } from '$lib/utils/helpers.js';
   import StatCard from '$lib/components/StatCard.svelte';
   import Panel from '$lib/components/Panel.svelte';
   import JsonEditor from '$lib/components/JsonEditor.svelte';
@@ -168,10 +168,7 @@
   function toggleExpand(i) { expandedRows[i] = !expandedRows[i]; expandedRows = expandedRows; }
   async function copyBody(idx) {
     const row = allMessages[idx]; if (!row) return;
-    try { await navigator.clipboard.writeText(row.body); } catch {
-      const ta = document.createElement('textarea'); ta.value = row.body; ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    }
+    try { await copyToClipboard(row.body); } catch {}
   }
 
   async function scheduleReportsRefresh() {

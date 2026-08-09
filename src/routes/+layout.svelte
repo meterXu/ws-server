@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import ChangePasswordModal from '$lib/components/ChangePasswordModal.svelte';
+  import { copyToClipboard } from '$lib/utils/helpers';
   import '../app.css';
 
   let { children, data } = $props();
@@ -36,7 +37,7 @@
   async function copyWsUrl() {
     if (!wsUrl) return;
     try {
-      await navigator.clipboard.writeText(wsUrl);
+      await copyToClipboard(wsUrl);
       copied = true;
       setTimeout(() => copied = false, 2000);
     } catch {}

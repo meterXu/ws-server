@@ -40,3 +40,36 @@ export function barColor(pct) {
   if (pct < 80) return 'bg-amber-500';
   return 'bg-red-500';
 }
+
+/**
+ * copy text to clipboard
+ *
+ * works in ALL environments
+ * - https / localhost → uses navigator.clipboard (fast, secure-context API)
+ * - plain http (non-localhost) → falls back to execCommand('copy')
+ */
+export async function copyToClipboard(text) {
+  // try the modern API first (requires secure context)
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // clipboard API can throw even when present (permission denied, etc.)
+    }
+  }
+
+  // fallback: classic textarea + execCommand (works everywhere)
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '-9999px';
+  ta.style.opacity = '0';
+  ta.setAttribute('readonly', '');
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
