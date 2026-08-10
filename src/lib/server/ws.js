@@ -13,6 +13,7 @@ const MAX_CLIENTS = 1000
 const MAX_LOG_ENTRIES = 200
 const MAX_REPORT_LOGS = 200
 const MAX_AUTO_REPLY_RULES = 50
+const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN !== 'false'
 
 let _idCounter = 0
 
@@ -80,6 +81,11 @@ export class WS {
       path: '/ws',
       verifyClient: (info, cb) => {
         const ip = info.req.socket.remoteAddress
+
+        if (!WS_REQUIRE_TOKEN) {
+          cb(true)
+          return
+        }
 
         // 鉴权：检查 token 查询参数
         const token = getQueryParam(info.req.url, 'token')
