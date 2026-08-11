@@ -310,8 +310,7 @@
                       </div>
                       <div class="mb-2">
                         <span class="text-xs text-slate-500 block mb-1">消息内容（JSON）</span>
-                        <textarea bind:value={edit.msg}
-                          class="w-full h-20 p-2 glass-subtle rounded-lg text-xs font-mono resize-y text-slate-200 focus:outline-none focus:border-accent-500/40"></textarea>
+                        <JsonEditor value={edit.msg} onChange={v => edit.msg = v} height="100px" />
                       </div>
                       <div class="mb-2">
                         <span class="text-xs text-slate-500 block mb-1">发送间隔（秒）</span>

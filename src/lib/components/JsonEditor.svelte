@@ -265,9 +265,22 @@
   .fullscreen-editor {
     width: 100%;
     max-width: 1200px;
+    height: 100%;
+    max-height: 80vh;
     border-radius: 1rem;
     box-shadow: 0 0 60px rgba(168, 85, 247, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fullscreen-editor :global(.cm-editor) {
+    height: 100%;
+    flex: 1;
+  }
+
+  .fullscreen-editor :global(.cm-scroller) {
+    overflow: auto;
   }
 
   .fullscreen-btn {
