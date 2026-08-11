@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit'
 import { validateSession, getOrCreateWSToken, rotateWSToken } from '$lib/server/auth.js'
 
-const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN !== 'false'
+const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN === 'true'
 
 /** GET /api/auth/ws-token — 获取 WebSocket 鉴权信息 */
 export async function GET({ cookies, url }) {

@@ -41,7 +41,7 @@ npm start
 
 访问 `http://localhost:3000`。默认账号密码: admin/admin123
 
-可通过环境变量 `WS_REQUIRE_TOKEN=false` 关闭 WebSocket token 鉴权；默认开启。
+可通过环境变量 `WS_REQUIRE_TOKEN=true` 开启 WebSocket token 鉴权；默认关闭。
 
 ## Docker 部署
 
@@ -59,7 +59,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      WS_REQUIRE_TOKEN: "false"
+      WS_REQUIRE_TOKEN: "true"
     volumes:
       - ws_data:/app/data
 

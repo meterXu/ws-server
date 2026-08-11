@@ -13,7 +13,7 @@ const MAX_CLIENTS = 1000
 const MAX_LOG_ENTRIES = 200
 const MAX_REPORT_LOGS = 200
 const MAX_AUTO_REPLY_RULES = 50
-const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN !== 'false'
+const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN === 'true'
 
 let _idCounter = 0
 

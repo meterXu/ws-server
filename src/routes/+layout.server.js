@@ -1,6 +1,6 @@
 import { getOrCreateWSToken } from '$lib/server/auth.js'
 
-const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN !== 'false'
+const WS_REQUIRE_TOKEN = process.env.WS_REQUIRE_TOKEN === 'true'
 
 /** @type {import('./$types').LayoutServerLoad} */
 export function load({ locals, url }) {
