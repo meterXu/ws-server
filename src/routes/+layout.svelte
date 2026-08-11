@@ -92,6 +92,7 @@
         >
           {copied ? '已复制' : '复制'}
         </button>
+        {#if data.requireToken}
         <button
           onclick={refreshWsToken}
           disabled={refreshing}
@@ -102,6 +103,7 @@
         >
           {refreshing ? '...' : '刷新'}
         </button>
+        {/if}
       </div>
     {/if}
     <div class="flex items-center gap-2">

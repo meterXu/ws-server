@@ -2,6 +2,7 @@
  * 生产模式入口 — 单端口运行 SvelteKit + WebSocket。
  * 替代 adapter-node 默认的 build/index.js。
  */
+import 'dotenv/config'
 import { createServer } from 'http'
 import { handler } from './build/handler.js'
 import { getWS } from './src/lib/server/ws.js'

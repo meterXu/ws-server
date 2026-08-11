@@ -13,14 +13,30 @@
   let container = $state(null);
   let view;
   let fullscreen = $state(false);
+  let lockedOverflow = '';
+
+  function setBodyOverflow(nextFullscreen) {
+    if (!browser) return;
+    if (nextFullscreen) {
+      if (lockedOverflow === '') lockedOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = lockedOverflow;
+      document.documentElement.style.overflow = '';
+      lockedOverflow = '';
+    }
+  }
 
   function toggleFullscreen() {
     fullscreen = !fullscreen;
+    setBodyOverflow(fullscreen);
   }
 
   function handleKeydown(e) {
     if (e.key === 'Escape' && fullscreen) {
       fullscreen = false;
+      setBodyOverflow(false);
       e.preventDefault();
     }
   }
@@ -161,6 +177,7 @@
   });
 
   onDestroy(() => {
+    setBodyOverflow(false);
     if (view) view.destroy();
   });
 

@@ -35,7 +35,7 @@
         return;
       }
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      wsRef = new WebSocket(protocol + '//' + location.host + '/ws?token=' + tokenData.token);
+      wsRef = new WebSocket(tokenData.wsUrl || (protocol + '//' + location.host + '/ws'));
     } catch {
       if (!wsDestroyed) setTimeout(connectWS, 5000);
       return;
